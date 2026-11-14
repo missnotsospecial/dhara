@@ -120,6 +120,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <input class="in" id="aiModel" autocomplete="off" aria-label="Model name">
     <button class="btn alt" id="aiSave">Save settings</button>
     <button class="btn alt" id="aiTest">Test connection</button>
+    <button class="btn alt" id="aiSpeed">Find fastest model</button>
     <p class="muted" id="aiStatus" role="status"></p>
     <button class="link" id="aiRemove">Remove key from this phone</button>
   </div>
@@ -129,7 +130,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 7, version 9. AI helper with speed readout.</div>
+  <div class="note">Build: Module 7, version 10. AI helper with model speed test.</div>
 </section>
 </main>
 
@@ -501,14 +502,14 @@ var AI=(function(){
     var lang=['english','nepali','romanized_nepali','mixed'].indexOf(o.message_language)>=0?o.message_language:'mixed';
     return{schema_version:'1.1',message_language:lang,source_layer:'ai',entries:out,skipped:sk,requires_confirmation:true};
   }
-  function interpret(text){
-    var c=cfg(),t0=Date.now();
-    var th=/gemini-3/.test(c.model)?{thinkingLevel:'minimal'}:(/gemini-2\.5-flash/.test(c.model)?{thinkingBudget:0}:null);
+  function interpret(text,o){
+    var c=cfg(),t0=Date.now(),model=(o&&o.model)||c.model,tmo=(o&&o.timeout)||25000;
+    var th=/gemini-3/.test(model)?{thinkingLevel:'minimal'}:(/gemini-2\.5-flash/.test(model)?{thinkingBudget:0}:null);
     function go(useTh){
       var g={responseMimeType:'application/json',responseJsonSchema:SCHEMA};
       if(useTh&&th)g.thinkingConfig=th;
       var body={systemInstruction:{parts:[{text:SYS}]},contents:[{role:'user',parts:[{text:'Today is '+todayISO()+'. Message: '+text}]}],generationConfig:g};
-      return call(B+'models/'+encodeURIComponent(c.model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.key},body:JSON.stringify(body)},25000);
+      return call(B+'models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.key},body:JSON.stringify(body)},tmo);
     }
     return go(true).then(function(r){return(r.status===400&&th)?go(false):r})
     .then(function(r){return r.ok?r.json():bad(r)})
@@ -532,7 +533,7 @@ var AI=(function(){
     .then(function(r){return r.ok?r.json():bad(r)})
     .then(function(j){
       var names=(j.models||[]).filter(function(m){return(m.supportedGenerationMethods||[]).indexOf('generateContent')>=0}).map(function(m){return m.name.replace(/^models\//,'')})
-        .filter(function(n){return/^gemini/.test(n)&&!/image|tts|live|audio|embed|robotics|computer|vision|banana|learnlm|customtools/.test(n)});
+        .filter(function(n){return/^gemini/.test(n)&&!/omni|image|tts|live|audio|embed|robotics|computer|vision|banana|learnlm|customtools/.test(n)});
       var pick=names.indexOf(c.model)>=0?c.model:(names.filter(function(n){return/flash/.test(n)&&!/lite|preview|exp/.test(n)}).sort().reverse()[0]||names.filter(function(n){return/flash/.test(n)}).sort().reverse()[0]||names[0]);
       if(!pick)throw new Error('No usable Gemini model found for this key');
       if(pick!==c.model){c.model=pick;save(c)}
@@ -540,7 +541,32 @@ var AI=(function(){
       return interpret('had momo for lunch, feeling anxious, period is 5 days late').then(function(r){return{model:pick,res:r,names:shown}},function(e){e.names=shown;e.model=pick;throw e});
     });
   }
-  return{cfg:cfg,save:save,interpret:interpret,why:why,test:test};
+  function speed(progress){
+    var c=cfg();if(!c.key)return Promise.reject(new Error('Paste your key first'));
+    return call(B+'models?pageSize=200',{headers:{'x-goog-api-key':c.key}},15000)
+    .then(function(r){return r.ok?r.json():bad(r)})
+    .then(function(j){
+      var all=(j.models||[]).filter(function(m){return(m.supportedGenerationMethods||[]).indexOf('generateContent')>=0}).map(function(m){return m.name.replace(/^models\//,'')});
+      var base=all.filter(function(n){return/^gemini/.test(n)&&/flash/.test(n)&&!/omni|image|live|tts|audio|embed|robotics|computer|vision|banana|learnlm|customtools|thinking/.test(n)});
+      var stable=base.filter(function(n){return!/preview|exp/.test(n)});if(!stable.length)stable=base;
+      function desc(a,b){return a<b?1:-1}
+      var lite=stable.filter(function(n){return/lite/.test(n)}).sort(desc).slice(0,2),std=stable.filter(function(n){return!/lite/.test(n)}).sort(desc).slice(0,3);
+      var cand=std.concat(lite);
+      if(!cand.length)throw new Error('No Flash models found on this key');
+      var results=[];
+      return cand.reduce(function(p,n){return p.then(function(){
+        if(progress)progress(n);
+        return interpret('had momo for lunch, feeling anxious, period is 5 days late',{model:n,timeout:12000}).then(
+          function(r){results.push(r.entries.length?{name:n,ms:r.ms,ok:true}:{name:n,err:'empty answer'})},
+          function(e){results.push({name:n,err:(e&&e.name==='AbortError')?'no reply in 12 s':(e&&e.status?'error '+e.status:'failed')})});
+      })},Promise.resolve()).then(function(){
+        var okr=results.filter(function(x){return x.ok}).sort(function(a,b){return a.ms-b.ms});
+        if(okr.length){c.model=okr[0].name;save(c)}
+        return{results:results,best:okr[0]||null};
+      });
+    });
+  }
+  return{cfg:cfg,save:save,interpret:interpret,why:why,test:test,speed:speed};
 })();
 (function(){
   var c=AI.cfg(),on=document.getElementById('aiOn'),key=document.getElementById('aiKey'),mod=document.getElementById('aiModel'),st=document.getElementById('aiStatus');
@@ -555,6 +581,14 @@ var AI=(function(){
     }).catch(function(e){
       st.textContent='Didn’t work: '+AI.why(e)+(e.status?' (error '+e.status+')':'')+(e.name!=='AbortError'&&e.message?' – '+String(e.message).slice(0,100):'')+(e.names?'. Models on your key: '+e.names.join(', ')+'. You can type another name in the Model box and test again.':'');
     });
+  };
+  document.getElementById('aiSpeed').onclick=function(){
+    if(!persist())return;st.textContent='Testing models… this can take a minute.';
+    AI.speed(function(n){st.textContent='Trying '+n+'…'}).then(function(r){
+      var lines=r.results.map(function(x){return x.name+': '+(x.ms!=null?(x.ms/1000).toFixed(1)+' s':x.err)}).join(' · ');
+      if(r.best){mod.value=r.best.name;st.textContent='Fastest: '+r.best.name+' ('+(r.best.ms/1000).toFixed(1)+' s) is now selected. All results: '+lines+'.'}
+      else st.textContent='No model answered in time. '+lines+'. Check your internet, or try again later.';
+    }).catch(function(e){st.textContent='Didn’t work: '+AI.why(e)+(e.status?' (error '+e.status+')':'')+(e.name!=='AbortError'&&e.message?' – '+String(e.message).slice(0,100):'')});
   };
   document.getElementById('aiRemove').onclick=function(){AI.save({on:false,key:'',model:mod.value.trim()||'gemini-3.5-flash'});on.checked=false;key.value='';st.textContent='Key removed from this phone.'};
 })();
