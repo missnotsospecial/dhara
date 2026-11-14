@@ -41,6 +41,8 @@ nav{flex:none;display:flex;background:var(--surface);border-top:1px solid var(--
 nav button{flex:1;border:0;background:none;font:inherit;font-size:12px;color:var(--slate);padding:8px 0 7px;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:2px}
 nav button[aria-current=page]{color:var(--teal);font-weight:600}
 nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.card .btn.alt{width:100%}
+.rec{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
 button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--deep);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86%;text-align:center}
 #toast.on{opacity:1}
@@ -87,8 +89,17 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
 <section id="me" hidden>
   <div class="card" id="installCard" hidden><h2>Add Dhara to your home screen</h2><p class="muted">Open it like any app, even without internet.</p><button class="btn alt" id="install">Install</button></div>
   <div class="card"><h2>About Dhara</h2><p class="muted">Dhara helps you track and prepare. It does not diagnose or replace a doctor.</p></div>
-  <div class="card"><h2>Your data</h2><p class="muted">Everything stays on this phone. Export and delete controls arrive in Module 2.</p></div>
-  <div class="note">Build: Module 1, version 1. Screens are a shell; features arrive module by module.</div>
+  <div class="card"><h2>Your data</h2>
+    <p class="muted" id="dataInfo"></p>
+    <button class="btn alt" id="exportBtn">Export all data</button>
+    <button class="btn alt" id="delBtn" style="background:var(--surface);color:var(--rose);border:1px solid var(--rose)">Delete all data</button>
+  </div>
+  <div class="card"><h2>Test tools</h2>
+    <p class="muted">Temporary, for checking storage. These are removed before the final version.</p>
+    <button class="btn alt" id="testBtn">Add test record</button>
+    <div id="recList" style="margin-top:10px"></div>
+  </div>
+  <div class="note">Build: Module 2, version 2. Records now save on this phone.</div>
 </section>
 </main>
 
@@ -136,6 +147,67 @@ document.getElementById('send').onclick=function(){
 Array.prototype.forEach.call(document.querySelectorAll('[data-soon]'),function(b){
   b.onclick=function(){toast(b.dataset.soon)};
 });
+var DB=(function(){
+  var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
+  var data={schema_version:1,records:[]};
+  function load(){
+    var raw=null;
+    try{raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);if(d&&Array.isArray(d.records))data=d;else throw 0}}
+    catch(e){if(raw){try{localStorage.setItem('dhara.corrupt.'+Date.now(),raw)}catch(x){}}data={schema_version:1,records:[]}}
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(data));return true}catch(e){toast('Couldn’t save. Phone storage may be full or blocked.');return false}}
+  function id(){return window.crypto&&crypto.randomUUID?crypto.randomUUID():'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+  function now(){return new Date().toISOString()}
+  function clean(r){
+    if(CATS.indexOf(r.category)<0)throw new Error('bad category');
+    if(SRC.indexOf(r.source)<0)throw new Error('bad source');
+    var t=r.occurred_at?new Date(r.occurred_at):null;
+    if(t&&isNaN(t))throw new Error('bad date');
+    return {id:id(),category:r.category,normalized_name:r.normalized_name||null,original_phrase:r.original_phrase||null,meal_type:r.meal_type||null,intensity:r.intensity==null?null:r.intensity,days_late:r.days_late==null?null:r.days_late,occurred_at:t?t.toISOString():null,confidence:r.confidence==null?null:r.confidence,uncertainties:r.uncertainties||[],source:r.source,created_at:now(),updated_at:now()};
+  }
+  load();
+  return{
+    all:function(){return data.records.slice()},
+    add:function(r){var c=clean(r);data.records.push(c);if(!save()){data.records.pop();return null}return c},
+    remove:function(i){data.records=data.records.filter(function(r){return r.id!==i});return save()},
+    clear:function(){data.records=[];return save()},
+    exportJson:function(){return JSON.stringify({app:'Dhara',exported_at:now(),schema_version:1,records:data.records},null,2)}
+  };
+})();
+var testBtn=document.getElementById('testBtn'),exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
+function fmt(iso){try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
+function renderData(){
+  var all=DB.all();
+  document.getElementById('dataInfo').textContent=all.length+(all.length===1?' record':' records')+' saved on this phone. Nothing leaves your device.';
+  var l=document.getElementById('recList');l.innerHTML='';
+  if(!all.length){l.innerHTML='<p class="muted">No records yet.</p>';return}
+  all.slice(-5).reverse().forEach(function(r){
+    var d=document.createElement('div');d.className='rec';
+    d.innerHTML='<div><b></b><div class="muted"></div></div><button class="chip">Remove</button>';
+    d.querySelector('b').textContent=r.category+': '+(r.normalized_name||'');
+    d.querySelector('.muted').textContent=fmt(r.created_at)+' · '+r.source;
+    d.querySelector('button').onclick=function(){DB.remove(r.id);renderData();toast('Record removed')};
+    l.appendChild(d);
+  });
+}
+testBtn.onclick=function(){
+  var r=DB.add({category:'note',normalized_name:'Test record '+(DB.all().length+1),source:'test',occurred_at:new Date().toISOString()});
+  if(r){renderData();toast('Saved on this phone')}
+};
+exportBtn.onclick=function(){
+  var b=new Blob([DB.exportJson()],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='dhara-export-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href)},1000);toast('Export saved to Downloads');
+};
+var delArm=0,delT;
+function resetDel(){delArm=0;delBtn.textContent='Delete all data'}
+delBtn.onclick=function(){
+  if(!delArm){delArm=1;delBtn.textContent='Tap again to delete everything';clearTimeout(delT);delT=setTimeout(resetDel,4000);return}
+  DB.clear();resetDel();renderData();toast('All data deleted');
+};
+renderData();
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(function(){})}
 var net=document.getElementById('net');
 function status(){var on=navigator.onLine;net.textContent=on?'Online':'Offline. Everything still works';net.className=on?'':'off'}
 window.addEventListener('online',status);window.addEventListener('offline',status);status();
