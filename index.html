@@ -95,9 +95,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
 
 <section id="cycle" hidden><div id="cycleBox"></div></section>
 
-<section id="patterns" hidden>
-  <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><path d="M4 26 L22 14 L38 20 L68 4" fill="none" stroke="#1F7A6D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h2>Patterns appear with time</h2><p class="muted">After a few weeks of logging, Dhara can describe what showed up together in your records.</p></div>
-</section>
+<section id="patterns" hidden><div id="patBox"></div></section>
 
 <section id="report" hidden>
   <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><rect x="24" y="2" width="24" height="28" rx="4" fill="#E3F0EC" stroke="#1F7A6D" stroke-width="2"/></svg><h2>Your doctor summary</h2><p class="muted">Once you have records, pick a date range and save a summary to take to your appointment.</p><button class="btn alt" data-soon="Doctor summary arrives in Module 9">Preview summary</button></div>
@@ -116,8 +114,10 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <label class="chk"><input type="checkbox" id="aiOn"><span>Use Gemini AI when online</span></label>
     <div class="lbl">Gemini API key (stays on this phone)</div>
     <input class="in" id="aiKey" type="password" autocomplete="off" aria-label="Gemini API key" placeholder="Paste your key">
-    <div class="lbl">Model</div>
-    <input class="in" id="aiModel" autocomplete="off" aria-label="Model name">
+    <details style="margin-top:8px"><summary class="muted">Advanced</summary>
+      <div class="lbl">Model name (set automatically by “Find fastest model”)</div>
+      <input class="in" id="aiModel" autocomplete="off" aria-label="Model name">
+    </details>
     <button class="btn alt" id="aiSave">Save settings</button>
     <button class="btn alt" id="aiTest">Test connection</button>
     <button class="btn alt" id="aiSpeed">Find fastest model</button>
@@ -130,7 +130,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 7, version 10. AI helper with model speed test.</div>
+  <div class="note">Build: Module 8, version 11. Patterns and labelled sample data.</div>
 </section>
 </main>
 
@@ -592,6 +592,200 @@ var AI=(function(){
   };
   document.getElementById('aiRemove').onclick=function(){AI.save({on:false,key:'',model:mod.value.trim()||'gemini-3.5-flash'});on.checked=false;key.value='';st.textContent='Key removed from this phone.'};
 })();
+var patRange=0,patOpen={};
+function insState(){try{return JSON.parse(localStorage.getItem('dhara.insights')||'{}')}catch(e){return{}}}
+function insSave(o){try{localStorage.setItem('dhara.insights',JSON.stringify(o))}catch(e){}}
+function itemKey(r){return r.vocab_id||('c:'+String(r.normalized_name).toLowerCase())}
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function genSample(){
+  var V=window.VOCAB,R=rng(20261114),n=new Date(),T=new Date(n.getFullYear(),n.getMonth(),n.getDate()),out=[],starts=[99,70,39,9];
+  function at(off,h){return new Date(T.getFullYear(),T.getMonth(),T.getDate()-off,h,0,0).toISOString()}
+  function vo(id){
+    var f=V.foods.filter(function(x){return x.id===id})[0],y=V.symptoms.filter(function(x){return x.id===id})[0],r=f||y;
+    return{cat:f?'food':y.maps_to,name:r.english.split(' (')[0].split(' / ')[0]};
+  }
+  function put(id,off,h,meal){var v=vo(id);out.push({category:v.cat,normalized_name:v.name,vocab_id:id,meal_type:meal||null,occurred_at:at(off,h),source:'sample',uncertainties:[]})}
+  function pick(a){return a[Math.floor(R()*a.length)]}
+  starts.forEach(function(s){
+    out.push({category:'cycle',normalized_name:'Period started',vocab_id:'period_started',occurred_at:at(s,7),source:'sample',uncertainties:[]});
+    out.push({category:'cycle',normalized_name:'Period ended',vocab_id:'period_ended',occurred_at:at(s-4,18),source:'sample',uncertainties:[]});
+  });
+  var chowN=0;
+  for(var off=99;off>=1;off--){
+    var idx=-1,pday=0;
+    starts.forEach(function(s){if(off>=s+1&&off<=s+5)idx=off-s-1;if(off<=s&&off>=s-4)pday=s-off+1});
+    var pre=idx>=0;
+    if(!pre&&!pday&&R()<0.18)continue;
+    if(R()<0.75)put('chiya',off,8,'breakfast');
+    if(R()<0.3)put(pick(['sel_roti','roti','egg','puri']),off,8,'breakfast');
+    var x=R(),chow=false;
+    if(x<0.55)put('dal_bhat',off,13,'lunch');else if(x<0.68)put('momo',off,13,'lunch');else if(x<0.86){put('chowmein',off,13,'lunch');chow=true;chowN++}else put('khichadi',off,13,'lunch');
+    if(R()<0.35)put(pick(['samosa','chatpate','fruit','panipuri','pakoda']),off,16,'snack');
+    put(R()<0.65?'dal_bhat':'roti',off,20,'dinner');
+    var tired=false;
+    if(pre){
+      if(idx!==2)put('anxiety',off,21);
+      if(R()<0.6)put('bloating',off,19);if(R()<0.5)put('cravings',off,17);
+      if(R()<0.35)put('poor_sleep',off,22);if(R()<0.25)put('low_mood',off,21);
+    }else{
+      if(R()<0.06)put('anxiety',off,21);if(R()<0.04)put('bloating',off,19);if(R()<0.04)put('cravings',off,17);
+      if(R()<0.12)put('poor_sleep',off,22);if(R()<0.03)put('low_mood',off,21);
+      if(!pday&&R()<0.3)put('happy',off,20);
+    }
+    if(pday&&pday<=2&&R()<0.9)put('cramps',off,10);
+    if(pday&&pday<=3&&R()<0.7){put('fatigue',off,15);tired=true}
+    if(!tired&&(chow?chowN%4!==0:R()<0.08))put('fatigue',off,16);
+    if(R()<0.07)put('acne',off,9);
+  }
+  return out;
+}
+var LF=[0];
+function lfa(n){while(LF.length<=n)LF.push(LF[LF.length-1]+Math.log(LF.length));return LF[n]}
+function lch(n,k){return lfa(n)-lfa(k)-lfa(n-k)}
+function fisher(a,b,c,d){var n1=a+b,K=a+c,N=a+b+c+d,p=0,hi=Math.min(n1,K);for(var x=a;x<=hi;x++)p+=Math.exp(lch(K,x)+lch(N-K,n1-x)-lch(N,n1));return p}
+function uniq(a){var o={};return a.filter(function(x){if(o[x])return false;o[x]=1;return true})}
+function computePatterns(){
+  var tn=dnum(todayISO()),lo=patRange?tn-patRange+1:-1e9;
+  var recs=DB.all().filter(function(r){return r.occurred_at&&r.category!=='note'&&dnum(dayKey(new Date(r.occurred_at)))>=lo});
+  var CAT={food:1,symptom:1,mood:1,anxiety:1,energy:1,sleep:1},logged={},items={},starts=[],ends=[],ins=[],needs=[];
+  recs.forEach(function(r){
+    var dy=dayKey(new Date(r.occurred_at));
+    if(r.category==='cycle'){if(r.vocab_id==='period_started')starts.push(dy);if(r.vocab_id==='period_ended')ends.push(dy);return}
+    if(!CAT[r.category])return;
+    logged[dy]=1;var k=itemKey(r),it=items[k]||(items[k]={key:k,name:r.normalized_name,category:r.category,days:{},recs:[]});
+    it.days[dy]=1;it.recs.push(r);
+  });
+  starts=uniq(starts.sort());ends=ends.sort();
+  var ld=Object.keys(logged).sort(),first=ld[0]||null,last=ld[ld.length-1]||null;
+  var period=first?fmtD(first)+' to '+fmtD(last,1):'';
+  function recIds(arr){return arr.map(function(r){return r.id})}
+  var startRecs=recs.filter(function(r){return r.vocab_id==='period_started'});
+  // A. cycle length
+  var lens=[];for(var i=1;i<starts.length;i++)lens.push(dnum(starts[i])-dnum(starts[i-1]));
+  if(lens.length>=3){
+    var mn=Math.min.apply(null,lens),mx=Math.max.apply(null,lens),av=Math.round(lens.reduce(function(a,b){return a+b},0)/lens.length),out=lens.filter(function(l){return l<21||l>35}).length;
+    ins.push({id:'cycle',label:'Cycle length',text:'Your recorded cycles were '+(mn===mx?mn:mn+' to '+mx)+' days long (average '+av+') across '+lens.length+' cycles.'+(out?' '+out+' of them fell outside the typical 21 to 35 day range, which is worth mentioning to a doctor.':''),
+      period:fmtD(starts[0])+' to '+fmtD(starts[starts.length-1],1),n:lens.length+' cycles',ids:recIds(startRecs),
+      chart:{items:lens.map(function(l,j){return{l:fmtD(starts[j]),v:l,t:l+' d'}}),max:Math.max(40,mx)}});
+  }else needs.push('Cycle length needs 3 completed cycles (4 period start dates). You have '+lens.length+'.');
+  // period days
+  var pd={};starts.forEach(function(st,j){var a=dnum(st),nx=starts[j+1]?dnum(starts[j+1]):1e9,e=ends.filter(function(x){var d=dnum(x);return d>=a&&d<nx})[0];for(var d=a;d<=(e?dnum(e):a);d++)pd[dkey(d)]=1});
+  // B. before-period
+  var wins=[],inWin={};
+  starts.forEach(function(st){
+    var days=[],lg=[];for(var d=dnum(st)-5;d<dnum(st);d++){days.push(dkey(d));if(logged[dkey(d)])lg.push(dkey(d))}
+    if(lg.length>=3){wins.push({s:st,days:days,lg:lg});lg.forEach(function(x){inWin[x]=1})}
+  });
+  if(wins.length>=3){
+    var otherLogged=ld.filter(function(x){return!inWin[x]&&!pd[x]}),cand=[];
+    Object.keys(items).forEach(function(k){
+      var it=items[k];if(it.category==='food')return;
+      var ww=0,wd=0,wl=0,rows=[];
+      wins.forEach(function(w){var c=w.lg.filter(function(x){return it.days[x]}).length;if(c)ww++;wd+=c;wl+=w.lg.length;rows.push({l:fmtD(w.s),v:c,t:c+'/'+w.lg.length})});
+      var od=otherLogged.filter(function(x){return it.days[x]}).length;
+      if(ww>=3&&ww/wins.length>=0.6&&wd>=3&&otherLogged.length&&(wd/wl)>=2*(od/otherLogged.length)&&fisher(wd,wl-wd,od,otherLogged.length-od)<=0.01)cand.push({it:it,ww:ww,wd:wd,wl:wl,od:od,rows:rows});
+    });
+    cand.sort(function(a,b){return b.ww-a.ww||(b.wd/b.wl)-(a.wd/a.wl)});
+    cand.slice(0,3).forEach(function(c){
+      var sup=c.it.recs.filter(function(r){var dy=dayKey(new Date(r.occurred_at));return wins.some(function(w){return w.lg.indexOf(dy)>=0})});
+      ins.push({id:'pre:'+c.it.key,label:'Before your periods',text:'‘'+c.it.name+'’ was recorded more often in the 5 days before your periods: in '+c.ww+' of '+wins.length+' periods, on '+c.wd+' of '+c.wl+' logged days in those windows, compared with '+c.od+' of '+otherLogged.length+' other logged days.',
+        period:period,n:wins.length+' periods · '+sup.length+' records',ids:recIds(sup),chart:{items:c.rows,max:5}});
+    });
+  }else needs.push('Before-period patterns need 3 periods, each with at least 3 logged days in the 5 days before it. You have '+wins.length+'.');
+  // C. food and feeling together (days outside the period and the 5 days before it)
+  var base=ld.filter(function(x){return!inWin[x]&&!pd[x]}),excl=base.length<ld.length;
+  function fdays(k){return base.filter(function(x){return items[k].days[x]})}
+  var foods=Object.keys(items).filter(function(k){return items[k].category==='food'&&fdays(k).length>=5}),feels=Object.keys(items).filter(function(k){return items[k].category!=='food'}),tog=[];
+  if(base.length>=14&&foods.length){
+    foods.forEach(function(fk){
+      var f=items[fk],fd=fdays(fk),nonf=base.filter(function(x){return!f.days[x]});if(!nonf.length)return;
+      feels.forEach(function(ek){
+        var e=items[ek],both=fd.filter(function(x){return e.days[x]}).length,wo=nonf.filter(function(x){return e.days[x]}).length;
+        if(both>=3&&both/fd.length>=0.5&&(both/fd.length)>=2*(wo/nonf.length)&&fisher(both,fd.length-both,wo,nonf.length-wo)<=0.01)tog.push({f:f,e:e,both:both,nf:fd.length,wo:wo,no:nonf.length,fd:fd});
+      });
+    });
+    tog.sort(function(a,b){return(b.both/b.nf)-(a.both/a.nf)||b.both-a.both});
+    var usedF={};
+    tog.filter(function(t){if(usedF[t.f.key])return false;usedF[t.f.key]=1;return true}).slice(0,2).forEach(function(t){
+      var set={};t.fd.forEach(function(x){set[x]=1});
+      var sup=t.e.recs.concat(t.f.recs).filter(function(r){return set[dayKey(new Date(r.occurred_at))]});
+      ins.push({id:'tog:'+t.f.key+':'+t.e.key,label:'Recorded together',text:'‘'+t.e.name+'’ was recorded on '+t.both+' of '+t.nf+' days when ‘'+t.f.name+'’ was also recorded, compared with '+t.wo+' of '+t.no+' other logged days.'+(excl?' Days of your period and the 5 days before it are left out of this comparison.':'')+' This describes your records only; it does not show that one causes the other.',
+        period:period,n:t.nf+' days · '+sup.length+' records',ids:recIds(sup),chart:{items:[{l:'With '+t.f.name,v:100*t.both/t.nf,t:Math.round(100*t.both/t.nf)+'%'},{l:'Other days',v:100*t.wo/t.no,t:Math.round(100*t.wo/t.no)+'%'}],max:100}});
+    });
+    if(!tog.length&&foods.length)needs.push('No food and feeling pattern stood out in your records so far. That is a normal result.');
+  }else needs.push('Food and feeling patterns need one food logged on at least 5 days, and at least 14 logged days (not counting your period and the 5 days before it).');
+  return{ins:ins,needs:needs,records:recs.length,loggedDays:ld.length,period:period};
+}
+function bars(c){
+  var w=el('div');w.style.margin='8px 0';
+  c.items.forEach(function(it){
+    var row=el('div');row.style.cssText='display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px';
+    var l=el('span','',it.l);l.style.cssText='width:88px;flex:none;color:var(--slate);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    var tr=el('div');tr.style.cssText='flex:1;background:var(--mist);border-radius:6px;height:12px';
+    var b=el('div');b.style.cssText='height:12px;border-radius:6px;background:var(--teal);width:'+Math.max(2,Math.round(100*it.v/c.max))+'%';tr.appendChild(b);
+    var v=el('span','',it.t);v.style.cssText='width:52px;flex:none;text-align:right';
+    row.appendChild(l);row.appendChild(tr);row.appendChild(v);w.appendChild(row);
+  });
+  return w;
+}
+function renderPatterns(){
+  var box=document.getElementById('patBox');if(!box)return;box.innerHTML='';
+  var all=DB.all(),hasSample=all.some(function(r){return r.source==='sample'}),real=all.some(function(r){return r.source!=='sample'&&r.source!=='test'&&r.category!=='note'});
+  if(hasSample){
+    var nb=el('div','note','Sample data is loaded. Everything on this screen comes from made-up entries, not a real person.');
+    nb.appendChild(btn('Remove sample data','chip',function(){var n=DB.removeWhere(function(r){return r.source==='sample'});renderData();toast('Removed '+n+' sample entries')})).style.marginTop='8px';
+    box.appendChild(nb);
+  }else if(!real){
+    var lc=el('div','card');lc.appendChild(el('h2','','See how Patterns looks'));
+    lc.appendChild(el('p','muted','Adds about 100 days of made-up entries, clearly labelled “sample data”, so you can see the screen working. You can remove them at any time.'));
+    lc.appendChild(btn('Load sample data','btn alt',function(){
+      if(!window.VOCAB){toast('Still loading. Try again in a moment.');return}
+      var n=DB.addMany(genSample());if(n){renderData();toast('Loaded '+n+' sample entries')}
+    }));
+    box.appendChild(lc);
+  }
+  var row=el('div','row');row.style.marginBottom='12px';
+  [[30,'30 days'],[90,'90 days'],[0,'All']].forEach(function(o){
+    var c=btn(o[1],'chip',function(){patRange=o[0];renderPatterns()});
+    if(patRange===o[0]){c.style.background='var(--teal)';c.style.color='#fff';c.setAttribute('aria-pressed','true')}row.appendChild(c);
+  });
+  box.appendChild(row);
+  // coverage (last 30 days, ignores range)
+  var tn=dnum(todayISO()),cov={};
+  all.forEach(function(r){if(r.occurred_at&&r.category!=='note'&&r.category!=='cycle'){var d=dnum(dayKey(new Date(r.occurred_at)));if(d>tn-30&&d<=tn)cov[d]=1}});
+  var cn=Object.keys(cov).length,cc=el('div','card');
+  cc.appendChild(el('h2','','Data coverage'));cc.appendChild(el('p','muted','You logged '+cn+' of the last 30 days. Gaps are not counted as “no symptoms”.'));
+  var tr=el('div');tr.style.cssText='height:8px;border-radius:4px;background:var(--line);margin-top:8px';var bb=el('div');bb.style.cssText='height:8px;border-radius:4px;background:var(--teal);width:'+Math.round(100*cn/30)+'%';tr.appendChild(bb);cc.appendChild(tr);box.appendChild(cc);
+  var P=computePatterns(),st=insState(),hidden=0;
+  if(!P.records){
+    var ec=el('div','card empty');ec.appendChild(el('h2','','Patterns appear with time'));
+    ec.appendChild(el('p','muted','Keep logging. After a few weeks, Dhara can describe what showed up together in your records.'));box.appendChild(ec);
+  }
+  P.ins.forEach(function(x){
+    if(st[x.id]){hidden++;return}
+    var c=el('div','card'),t=el('span','tag',x.label);c.appendChild(t);
+    c.appendChild(el('p','',x.text));c.appendChild(bars(x.chart));
+    c.appendChild(el('p','muted','Based on '+x.n+' · '+x.period)).style.fontSize='12px';
+    var a=el('div','row');a.style.marginTop='6px';
+    a.appendChild(btn(patOpen[x.id]?'Hide records':'View records','chip',function(){patOpen[x.id]=!patOpen[x.id];renderPatterns()}));
+    a.appendChild(btn('Not accurate','chip',function(){st[x.id]='inaccurate';insSave(st);renderPatterns();toast('Hidden. Thanks for telling us.')}));
+    a.appendChild(btn('Dismiss','chip',function(){st[x.id]='dismissed';insSave(st);renderPatterns()}));
+    c.appendChild(a);
+    if(patOpen[x.id]){
+      var recs=x.ids.map(function(id){return DB.all().filter(function(r){return r.id===id})[0]}).filter(Boolean).sort(function(a,b){return a.occurred_at<b.occurred_at?1:-1}),l=el('div');
+      recs.slice(0,12).forEach(function(r){var d=el('div','ent');d.appendChild(el('b','',label(r)));d.appendChild(el('div','muted',fmtD(dayKey(new Date(r.occurred_at)),1)+' · '+(SRCL[r.source]||r.source)));l.appendChild(d)});
+      if(recs.length>12)l.appendChild(el('p','muted','…and '+(recs.length-12)+' more.'));
+      c.appendChild(l);
+    }
+    box.appendChild(c);
+  });
+  if(P.records&&P.needs.length){
+    var nc=el('div','card');nc.appendChild(el('h2','','What Dhara needs to show more'));
+    P.needs.forEach(function(n){nc.appendChild(el('p','muted',n)).style.marginTop='6px'});box.appendChild(nc);
+  }
+  if(hidden){box.appendChild(btn('Show '+hidden+' hidden '+(hidden===1?'pattern':'patterns'),'link',function(){insSave({});renderPatterns()}))}
+  box.appendChild(el('p','muted','These observations describe your own records. They don’t show that one thing causes another, and they are not a diagnosis.')).style.fontSize='13px';
+}
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
   var data={schema_version:1,records:[]};
@@ -616,13 +810,16 @@ var DB=(function(){
     add:function(r){var c=clean(r);data.records.push(c);if(!save()){data.records.pop();return null}return c},
     remove:function(i){data.records=data.records.filter(function(r){return r.id!==i});return save()},
     clear:function(){data.records=[];return save()},
+    addMany:function(list){var cs=[];try{list.forEach(function(r){cs.push(clean(r))})}catch(e){toast('Couldn’t add those entries');return null}
+      var before=data.records.length;data.records=data.records.concat(cs);if(!save()){data.records=data.records.slice(0,before);return null}return cs.length},
+    removeWhere:function(fn){var n=data.records.length;data.records=data.records.filter(function(r){return!fn(r)});save();return n-data.records.length},
     exportJson:function(){return JSON.stringify({app:'Dhara',exported_at:now(),schema_version:1,records:data.records},null,2)}
   };
 })();
 var testBtn=document.getElementById('testBtn'),exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
 function fmt(iso){try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function renderData(){
-  renderToday();renderCycle();
+  renderToday();renderCycle();renderPatterns();
   var all=DB.all();
   document.getElementById('dataInfo').textContent=all.length+(all.length===1?' record':' records')+' saved on this phone. Nothing leaves your device.';
   var l=document.getElementById('recList');l.innerHTML='';
