@@ -1,0 +1,1745 @@
+{
+ "version": "0.1-draft",
+ "foods": [
+  {
+   "id": "dal_bhat",
+   "english": "Dal bhat (rice and lentil soup)",
+   "nepali": "दाल भात",
+   "romanized": "dal bhat",
+   "aliases": [
+    "daal bhaat",
+    "dalbhat",
+    "dal-bhat",
+    "daal bhat",
+    "dal bhaat"
+   ],
+   "category": "meal",
+   "notes": "Usually served with tarkari and achar. Sides can be logged separately.",
+   "review": ""
+  },
+  {
+   "id": "rice",
+   "english": "Rice",
+   "nepali": "भात",
+   "romanized": "bhat",
+   "aliases": [
+    "bhaat",
+    "rice",
+    "chamal bhat"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "dal",
+   "english": "Lentil soup (dal)",
+   "nepali": "दाल",
+   "romanized": "dal",
+   "aliases": [
+    "daal",
+    "dhal",
+    "jhol dal"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "tarkari",
+   "english": "Vegetable curry (tarkari)",
+   "nepali": "तरकारी",
+   "romanized": "tarkari",
+   "aliases": [
+    "tarkaari",
+    "sabji",
+    "sabzi",
+    "vegetable curry",
+    "veg curry"
+   ],
+   "category": "meal",
+   "notes": "Specific vegetables can be added as custom entries.",
+   "review": ""
+  },
+  {
+   "id": "dhido",
+   "english": "Dhido",
+   "nepali": "ढिँडो",
+   "romanized": "dhido",
+   "aliases": [
+    "dhindo",
+    "dhiro",
+    "dhedo"
+   ],
+   "category": "meal",
+   "notes": "Made from buckwheat, millet or maize flour.",
+   "review": "check"
+  },
+  {
+   "id": "kodo_dhido",
+   "english": "Millet dhido (kodo)",
+   "nepali": "कोदोको ढिँडो",
+   "romanized": "kodo ko dhido",
+   "aliases": [
+    "kodo dhido",
+    "millet dhido",
+    "kodo"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "fapar_roti",
+   "english": "Buckwheat roti",
+   "nepali": "फापरको रोटी",
+   "romanized": "fapar ko roti",
+   "aliases": [
+    "phapar roti",
+    "buckwheat roti",
+    "fapar"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "gundruk",
+   "english": "Gundruk (fermented greens)",
+   "nepali": "गुन्द्रुक",
+   "romanized": "gundruk",
+   "aliases": [
+    "gundruck",
+    "gundruk soup",
+    "gundruk ko jhol"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "sisnu",
+   "english": "Stinging nettle (sisnu)",
+   "nepali": "सिस्नु",
+   "romanized": "sisnu",
+   "aliases": [
+    "sisno",
+    "nettle",
+    "sisnu soup"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "saag",
+   "english": "Leafy greens (saag)",
+   "nepali": "साग",
+   "romanized": "saag",
+   "aliases": [
+    "sag",
+    "greens",
+    "leafy greens",
+    "sag tarkari"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "khichadi",
+   "english": "Khichadi",
+   "nepali": "खिचडी",
+   "romanized": "khichadi",
+   "aliases": [
+    "khichdi",
+    "khichri",
+    "khichuri"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "achar",
+   "english": "Pickle (achar)",
+   "nepali": "अचार",
+   "romanized": "achar",
+   "aliases": [
+    "aachar",
+    "achaar",
+    "pickle",
+    "mula ko achar",
+    "alu ko achar"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "roti",
+   "english": "Roti",
+   "nepali": "रोटी",
+   "romanized": "roti",
+   "aliases": [
+    "rotee",
+    "chapati",
+    "chapaati"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "sel_roti",
+   "english": "Sel roti",
+   "nepali": "सेल रोटी",
+   "romanized": "sel roti",
+   "aliases": [
+    "selroti",
+    "sel-roti",
+    "sel"
+   ],
+   "category": "breakfast",
+   "notes": "Festival and everyday breakfast.",
+   "review": ""
+  },
+  {
+   "id": "puri",
+   "english": "Puri",
+   "nepali": "पुरी",
+   "romanized": "puri",
+   "aliases": [
+    "poori",
+    "puri tarkari"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "paratha",
+   "english": "Paratha",
+   "nepali": "पराठा",
+   "romanized": "paratha",
+   "aliases": [
+    "parautha",
+    "parantha",
+    "aloo paratha"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "pau_roti",
+   "english": "Bread / toast",
+   "nepali": "पाउरोटी",
+   "romanized": "pau roti",
+   "aliases": [
+    "pauroti",
+    "bread",
+    "toast",
+    "bread toast",
+    "slice bread"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "omelette",
+   "english": "Omelette",
+   "nepali": "ओमलेट",
+   "romanized": "omelette",
+   "aliases": [
+    "omlet",
+    "omelet",
+    "omlate"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "oats",
+   "english": "Oats",
+   "nepali": "ओट्स",
+   "romanized": "oats",
+   "aliases": [
+    "oat",
+    "oatmeal",
+    "oats porridge"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chiura",
+   "english": "Beaten rice (chiura)",
+   "nepali": "चिउरा",
+   "romanized": "chiura",
+   "aliases": [
+    "chiwra",
+    "chyura",
+    "chiuda",
+    "baji",
+    "chiura dahi"
+   ],
+   "category": "breakfast",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "bhuteko_makai",
+   "english": "Roasted corn",
+   "nepali": "भुटेको मकै",
+   "romanized": "bhuteko makai",
+   "aliases": [
+    "makai",
+    "bhutta",
+    "roasted corn",
+    "makai bhuteko"
+   ],
+   "category": "snack",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chiya",
+   "english": "Tea (chiya)",
+   "nepali": "चिया",
+   "romanized": "chiya",
+   "aliases": [
+    "chia",
+    "chai",
+    "tea",
+    "milk tea",
+    "dudh chiya",
+    "chiyaa"
+   ],
+   "category": "drink",
+   "notes": "Sugar and milk can be noted in the entry details.",
+   "review": ""
+  },
+  {
+   "id": "coffee",
+   "english": "Coffee",
+   "nepali": "कफी",
+   "romanized": "kafi",
+   "aliases": [
+    "coffee",
+    "kaffi",
+    "coffe"
+   ],
+   "category": "drink",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "milk",
+   "english": "Milk",
+   "nepali": "दूध",
+   "romanized": "dudh",
+   "aliases": [
+    "doodh",
+    "milk",
+    "dud"
+   ],
+   "category": "dairy",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "dahi",
+   "english": "Curd (dahi)",
+   "nepali": "दही",
+   "romanized": "dahi",
+   "aliases": [
+    "dahee",
+    "curd",
+    "yogurt",
+    "yoghurt"
+   ],
+   "category": "dairy",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "lassi",
+   "english": "Lassi",
+   "nepali": "लस्सी",
+   "romanized": "lassi",
+   "aliases": [
+    "lasi"
+   ],
+   "category": "drink",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "lemon_water",
+   "english": "Lemon water",
+   "nepali": "निबुवा पानी",
+   "romanized": "nimbu pani",
+   "aliases": [
+    "nibuwa pani",
+    "nimbu paani",
+    "lemon water",
+    "lemonade"
+   ],
+   "category": "drink",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "juice",
+   "english": "Juice",
+   "nepali": "जुस",
+   "romanized": "jus",
+   "aliases": [
+    "juice",
+    "jooce",
+    "fresh juice",
+    "fruit juice"
+   ],
+   "category": "drink",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "soft_drink",
+   "english": "Soft drink",
+   "nepali": "सफ्ट ड्रिङ्क",
+   "romanized": "soft drink",
+   "aliases": [
+    "coke",
+    "cola",
+    "fanta",
+    "pepsi",
+    "cold drink",
+    "cold drinks",
+    "soda",
+    "sprite"
+   ],
+   "category": "drink",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "raksi",
+   "english": "Raksi",
+   "nepali": "रक्सी",
+   "romanized": "raksi",
+   "aliases": [
+    "rakshi",
+    "raksee"
+   ],
+   "category": "drink",
+   "notes": "Alcohol. Logged without judgment.",
+   "review": ""
+  },
+  {
+   "id": "tongba",
+   "english": "Tongba / chhyang",
+   "nepali": "तोङ्बा / छ्याङ",
+   "romanized": "tongba",
+   "aliases": [
+    "chyang",
+    "chhyang",
+    "chhang",
+    "jaad",
+    "jand"
+   ],
+   "category": "drink",
+   "notes": "Alcohol. Logged without judgment.",
+   "review": "check"
+  },
+  {
+   "id": "beer",
+   "english": "Beer",
+   "nepali": "वियर",
+   "romanized": "beer",
+   "aliases": [
+    "bear",
+    "bier"
+   ],
+   "category": "drink",
+   "notes": "Alcohol. Logged without judgment.",
+   "review": ""
+  },
+  {
+   "id": "momo",
+   "english": "Momo",
+   "nepali": "मोमो",
+   "romanized": "momo",
+   "aliases": [
+    "momos",
+    "mo mo",
+    "mome",
+    "steam momo",
+    "steamed momo"
+   ],
+   "category": "street_food",
+   "notes": "Steamed by default. Fillings can be added as details.",
+   "review": ""
+  },
+  {
+   "id": "jhol_momo",
+   "english": "Jhol momo",
+   "nepali": "झोल मोमो",
+   "romanized": "jhol momo",
+   "aliases": [
+    "jholmomo",
+    "momo jhol",
+    "jhol-momo"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "fried_momo",
+   "english": "Fried momo",
+   "nepali": "फ्राइड मोमो",
+   "romanized": "fried momo",
+   "aliases": [
+    "bhuteko momo",
+    "fry momo",
+    "fried momos"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "kothey_momo",
+   "english": "Kothey momo",
+   "nepali": "कोठे मोमो",
+   "romanized": "kothey momo",
+   "aliases": [
+    "kothe momo",
+    "kothay momo",
+    "kothey",
+    "kothe"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chowmein",
+   "english": "Chowmein",
+   "nepali": "चाउमिन",
+   "romanized": "chowmein",
+   "aliases": [
+    "chaumin",
+    "chow mein",
+    "chau mein",
+    "chawmin",
+    "chaumeen"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "thukpa",
+   "english": "Thukpa",
+   "nepali": "थुक्पा",
+   "romanized": "thukpa",
+   "aliases": [
+    "thupka",
+    "thuppa",
+    "thukpa soup"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chatpate",
+   "english": "Chatpate",
+   "nepali": "चटपटे",
+   "romanized": "chatpate",
+   "aliases": [
+    "chatapate",
+    "chatpat",
+    "chatpatey"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "panipuri",
+   "english": "Panipuri",
+   "nepali": "पानीपुरी",
+   "romanized": "panipuri",
+   "aliases": [
+    "pani puri",
+    "panipuri",
+    "golgappa",
+    "paani puri"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "samosa",
+   "english": "Samosa",
+   "nepali": "समोसा",
+   "romanized": "samosa",
+   "aliases": [
+    "samosha",
+    "samossa"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "pakoda",
+   "english": "Pakoda",
+   "nepali": "पकौडा",
+   "romanized": "pakoda",
+   "aliases": [
+    "pakora",
+    "pakauda",
+    "pakoura",
+    "pakode"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "chatamari",
+   "english": "Chatamari",
+   "nepali": "चटामरी",
+   "romanized": "chatamari",
+   "aliases": [
+    "chatamari",
+    "chatamary",
+    "newari pizza"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "yomari",
+   "english": "Yomari",
+   "nepali": "योमरी",
+   "romanized": "yomari",
+   "aliases": [
+    "yomary"
+   ],
+   "category": "sweet",
+   "notes": "Newari festival sweet.",
+   "review": ""
+  },
+  {
+   "id": "bara",
+   "english": "Bara (lentil patty)",
+   "nepali": "बारा",
+   "romanized": "bara",
+   "aliases": [
+    "baara",
+    "wo",
+    "woh"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "choila",
+   "english": "Choila",
+   "nepali": "चोइला",
+   "romanized": "choila",
+   "aliases": [
+    "chhoila",
+    "choyila",
+    "choyela",
+    "chwela"
+   ],
+   "category": "street_food",
+   "notes": "Newari spiced grilled meat.",
+   "review": ""
+  },
+  {
+   "id": "aloo_tama",
+   "english": "Aloo tama (potato bamboo shoot curry)",
+   "nepali": "आलु तामा",
+   "romanized": "aloo tama",
+   "aliases": [
+    "alu tama",
+    "aaloo tama",
+    "alu tama bodi"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "aloo_chop",
+   "english": "Aloo chop",
+   "nepali": "आलु चप",
+   "romanized": "aloo chop",
+   "aliases": [
+    "alu chop",
+    "aalu chop"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "aloo_dum",
+   "english": "Aloo dum",
+   "nepali": "आलु दम",
+   "romanized": "aloo dum",
+   "aliases": [
+    "alu dum",
+    "aaloo dum"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "sadeko",
+   "english": "Sadeko (spiced salad)",
+   "nepali": "सदेको",
+   "romanized": "sadeko",
+   "aliases": [
+    "sandheko",
+    "sadeko",
+    "sandeko"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "bhatmas_sadeko",
+   "english": "Bhatmas sadeko (roasted soybean salad)",
+   "nepali": "भटमास सदेको",
+   "romanized": "bhatmas sadeko",
+   "aliases": [
+    "bhatmas sandheko",
+    "bhatmas sadeko"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "sekuwa",
+   "english": "Sekuwa (grilled meat)",
+   "nepali": "सेकुवा",
+   "romanized": "sekuwa",
+   "aliases": [
+    "sekua",
+    "sekuwaa",
+    "sekwa"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "noodles",
+   "english": "Instant noodles",
+   "nepali": "नुडल्स",
+   "romanized": "noodles",
+   "aliases": [
+    "wai wai",
+    "waiwai",
+    "chau chau",
+    "instant noodles",
+    "maggi",
+    "noodle",
+    "ramen"
+   ],
+   "category": "street_food",
+   "notes": "Brand names are only listed as everyday words people use.",
+   "review": ""
+  },
+  {
+   "id": "french_fries",
+   "english": "French fries",
+   "nepali": "फ्रेन्च फ्राइज",
+   "romanized": "french fries",
+   "aliases": [
+    "fries",
+    "french fry",
+    "finger chips"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chips",
+   "english": "Packaged chips",
+   "nepali": "चिप्स",
+   "romanized": "chips",
+   "aliases": [
+    "kurkure",
+    "lays",
+    "packet chips",
+    "chip"
+   ],
+   "category": "snack",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "pizza",
+   "english": "Pizza",
+   "nepali": "पिज्जा",
+   "romanized": "pizza",
+   "aliases": [
+    "pijja",
+    "pizzaa"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "burger",
+   "english": "Burger",
+   "nepali": "बर्गर",
+   "romanized": "burger",
+   "aliases": [
+    "burgar",
+    "burgers"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "sandwich",
+   "english": "Sandwich",
+   "nepali": "स्यान्डविच",
+   "romanized": "sandwich",
+   "aliases": [
+    "sandwitch",
+    "sandwiches"
+   ],
+   "category": "street_food",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "biryani",
+   "english": "Biryani",
+   "nepali": "बिरियानी",
+   "romanized": "biryani",
+   "aliases": [
+    "biriyani",
+    "briyani"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "fried_rice",
+   "english": "Fried rice",
+   "nepali": "फ्राइड राइस",
+   "romanized": "fried rice",
+   "aliases": [
+    "friedrice",
+    "fry rice"
+   ],
+   "category": "meal",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "mithai",
+   "english": "Sweets (mithai)",
+   "nepali": "मिठाई",
+   "romanized": "mithai",
+   "aliases": [
+    "mithaai",
+    "sweets",
+    "misthan"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "jalebi",
+   "english": "Jalebi",
+   "nepali": "जलेबी",
+   "romanized": "jalebi",
+   "aliases": [
+    "jilebi",
+    "jilapi"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "laddu",
+   "english": "Laddu",
+   "nepali": "लड्डु",
+   "romanized": "laddu",
+   "aliases": [
+    "ladoo",
+    "laddoo"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "gulab_jamun",
+   "english": "Gulab jamun",
+   "nepali": "गुलाब जामुन",
+   "romanized": "gulab jamun",
+   "aliases": [
+    "gulabjamun",
+    "gulab jamoon"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "kheer",
+   "english": "Kheer",
+   "nepali": "खीर",
+   "romanized": "kheer",
+   "aliases": [
+    "khir",
+    "rice pudding"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "lalmohan",
+   "english": "Lalmohan",
+   "nepali": "ललमोहन",
+   "romanized": "lalmohan",
+   "aliases": [
+    "lal mohan",
+    "lalmohun"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "rasbari",
+   "english": "Rasbari",
+   "nepali": "रसबरी",
+   "romanized": "rasbari",
+   "aliases": [
+    "rasbary",
+    "rasbari"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "ice_cream",
+   "english": "Ice cream",
+   "nepali": "आइसक्रिम",
+   "romanized": "ice cream",
+   "aliases": [
+    "icecream",
+    "ice-cream",
+    "aiskrim"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chocolate",
+   "english": "Chocolate",
+   "nepali": "चकलेट",
+   "romanized": "chocolate",
+   "aliases": [
+    "choclate",
+    "chakleta",
+    "chocolates",
+    "dairy milk"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "cake",
+   "english": "Cake",
+   "nepali": "केक",
+   "romanized": "cake",
+   "aliases": [
+    "keak",
+    "cakes"
+   ],
+   "category": "sweet",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "egg",
+   "english": "Egg",
+   "nepali": "अण्डा",
+   "romanized": "anda",
+   "aliases": [
+    "egg",
+    "eggs",
+    "ande",
+    "andaa",
+    "boiled egg",
+    "fried egg"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chicken",
+   "english": "Chicken",
+   "nepali": "कुखुराको मासु",
+   "romanized": "kukhura ko masu",
+   "aliases": [
+    "chicken",
+    "kukhura",
+    "kukhura masu",
+    "chiken"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "mutton",
+   "english": "Mutton / goat",
+   "nepali": "खसीको मासु",
+   "romanized": "khasi ko masu",
+   "aliases": [
+    "mutton",
+    "khasi",
+    "goat",
+    "khasi masu"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "buff",
+   "english": "Buff (buffalo meat)",
+   "nepali": "भैंसीको मासु",
+   "romanized": "bhaisi ko masu",
+   "aliases": [
+    "buff",
+    "buffalo",
+    "buff masu",
+    "buff curry",
+    "bhaisi masu"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "fish",
+   "english": "Fish",
+   "nepali": "माछा",
+   "romanized": "machha",
+   "aliases": [
+    "macha",
+    "machhaa",
+    "fish curry",
+    "fish"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "paneer",
+   "english": "Paneer",
+   "nepali": "पनीर",
+   "romanized": "paneer",
+   "aliases": [
+    "panir",
+    "panner"
+   ],
+   "category": "dairy",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "chana",
+   "english": "Chickpeas (chana)",
+   "nepali": "चना",
+   "romanized": "chana",
+   "aliases": [
+    "channa",
+    "chickpea",
+    "chana masala"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "bhatmas",
+   "english": "Soybean (bhatmas)",
+   "nepali": "भटमास",
+   "romanized": "bhatmas",
+   "aliases": [
+    "bhatmaas",
+    "soybean",
+    "soya"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "sukuti",
+   "english": "Sukuti (dried meat)",
+   "nepali": "सुकुटी",
+   "romanized": "sukuti",
+   "aliases": [
+    "sukutti",
+    "sukhuti",
+    "dry meat"
+   ],
+   "category": "protein",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "fruit",
+   "english": "Fruit",
+   "nepali": "फलफूल",
+   "romanized": "phalphul",
+   "aliases": [
+    "fruits",
+    "fal",
+    "fruit",
+    "phal"
+   ],
+   "category": "fruit",
+   "notes": "Seasonal and local fruit. Specific fruit can be a custom entry.",
+   "review": ""
+  },
+  {
+   "id": "apple",
+   "english": "Apple",
+   "nepali": "स्याउ",
+   "romanized": "syau",
+   "aliases": [
+    "apple",
+    "seu",
+    "syaau"
+   ],
+   "category": "fruit",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "banana",
+   "english": "Banana",
+   "nepali": "केरा",
+   "romanized": "kera",
+   "aliases": [
+    "banana",
+    "kerra"
+   ],
+   "category": "fruit",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "orange",
+   "english": "Orange",
+   "nepali": "सुन्तला",
+   "romanized": "suntala",
+   "aliases": [
+    "orange",
+    "suntalaa",
+    "junar",
+    "junaar"
+   ],
+   "category": "fruit",
+   "notes": "Junar (sweet orange) is a separate fruit; treated as an alias for now.",
+   "review": "check"
+  },
+  {
+   "id": "mango",
+   "english": "Mango",
+   "nepali": "आँप",
+   "romanized": "aap",
+   "aliases": [
+    "mango",
+    "aamp",
+    "aam",
+    "aanp"
+   ],
+   "category": "fruit",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "salad",
+   "english": "Salad",
+   "nepali": "सलाद",
+   "romanized": "salad",
+   "aliases": [
+    "salaad",
+    "salad",
+    "kachumber"
+   ],
+   "category": "fruit",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "fasting",
+   "english": "Fasting / vrat (not eating)",
+   "nepali": "व्रत",
+   "romanized": "brata",
+   "aliases": [
+    "vrat",
+    "vrata",
+    "upabas",
+    "upvas",
+    "fasting",
+    "upwas"
+   ],
+   "category": "event",
+   "notes": "Not a food. Records a fasting day without judgment.",
+   "review": ""
+  }
+ ],
+ "symptoms": [
+  {
+   "id": "irregular_period",
+   "english": "Irregular period",
+   "nepali": "अनियमित महिनावारी",
+   "romanized": "aniyamit mahinawari",
+   "aliases": [
+    "irregular period",
+    "period irregular",
+    "mahina aniyamit",
+    "mahinawari aniyamit",
+    "irregular periods"
+   ],
+   "group": "menstrual",
+   "maps_to": "cycle",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "missed_period",
+   "english": "Missed period",
+   "nepali": "महिनावारी भएन",
+   "romanized": "mahinawari bhayena",
+   "aliases": [
+    "period miss",
+    "mahina aayena",
+    "mahina nabhayeko",
+    "period aayena",
+    "period miss bhayo",
+    "period bhayena",
+    "mahina bhayena"
+   ],
+   "group": "menstrual",
+   "maps_to": "cycle",
+   "safety_flag": "",
+   "notes": "Needs a date to become a cycle record.",
+   "review": ""
+  },
+  {
+   "id": "period_late",
+   "english": "Period late",
+   "nepali": "महिनावारी ढिलो",
+   "romanized": "mahinawari dhilo",
+   "aliases": [
+    "period late",
+    "period dhilo",
+    "mahina dhilo",
+    "late bhayo",
+    "period delay",
+    "delayed period"
+   ],
+   "group": "menstrual",
+   "maps_to": "cycle",
+   "safety_flag": "",
+   "notes": "Days late is only recorded when the user states it or confirms it.",
+   "review": ""
+  },
+  {
+   "id": "heavy_flow",
+   "english": "Heavy bleeding",
+   "nepali": "धेरै रगत बग्यो",
+   "romanized": "dherai ragat bagyo",
+   "aliases": [
+    "heavy flow",
+    "heavy bleeding",
+    "dherai bleeding",
+    "ragat dherai",
+    "flow dherai"
+   ],
+   "group": "menstrual",
+   "maps_to": "symptom",
+   "safety_flag": "clinician_review",
+   "notes": "Safety wording to be written with a clinical reviewer.",
+   "review": ""
+  },
+  {
+   "id": "light_flow",
+   "english": "Light bleeding",
+   "nepali": "कम रगत बग्यो",
+   "romanized": "kam ragat bagyo",
+   "aliases": [
+    "light flow",
+    "light bleeding",
+    "ragat kam",
+    "flow kam"
+   ],
+   "group": "menstrual",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "spotting",
+   "english": "Spotting",
+   "nepali": "थोरै रगत देखियो",
+   "romanized": "thorai ragat dekhiyo",
+   "aliases": [
+    "spotting",
+    "ragat ko dag"
+   ],
+   "group": "menstrual",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "cramps",
+   "english": "Cramps",
+   "nepali": "पेट दुख्यो",
+   "romanized": "pet dukhyo",
+   "aliases": [
+    "cramps",
+    "cramp",
+    "pet dukhne",
+    "period pain",
+    "pet ma pain",
+    "pet bathyo",
+    "pet dukhyo"
+   ],
+   "group": "menstrual",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "acne",
+   "english": "Acne / pimples",
+   "nepali": "डन्डीफोर",
+   "romanized": "dandiphor",
+   "aliases": [
+    "acne",
+    "pimple",
+    "pimples",
+    "pimpal",
+    "dandifor",
+    "dandipor"
+   ],
+   "group": "skin",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "oily_skin",
+   "english": "Oily skin",
+   "nepali": "तेलीय छाला",
+   "romanized": "teliya chhala",
+   "aliases": [
+    "oily skin",
+    "oily face",
+    "chala telo",
+    "face oily",
+    "telilo"
+   ],
+   "group": "skin",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "hair_thinning",
+   "english": "Hair thinning or hair fall",
+   "nepali": "कपाल झर्‍यो",
+   "romanized": "kapal jharyo",
+   "aliases": [
+    "hair fall",
+    "hair loss",
+    "hairfall",
+    "hair thin",
+    "kapal jhar",
+    "kapal jharne",
+    "hair jharyo"
+   ],
+   "group": "skin",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "excess_hair",
+   "english": "Extra hair growth",
+   "nepali": "अनावश्यक रौं",
+   "romanized": "anawashyak raun",
+   "aliases": [
+    "hirsutism",
+    "face ma hair",
+    "chin hair",
+    "raun badhi",
+    "unwanted hair",
+    "extra hair"
+   ],
+   "group": "skin",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "bloating",
+   "english": "Bloating",
+   "nepali": "पेट फुल्यो",
+   "romanized": "pet fulyo",
+   "aliases": [
+    "bloating",
+    "bloated",
+    "gas",
+    "pet fulera",
+    "pet bloated",
+    "pet fulyo"
+   ],
+   "group": "physical",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "headache",
+   "english": "Headache",
+   "nepali": "टाउको दुख्यो",
+   "romanized": "tauko dukhyo",
+   "aliases": [
+    "headache",
+    "head pain",
+    "tauko dukhne",
+    "tauko dukhyo",
+    "head ache"
+   ],
+   "group": "physical",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "back_pain",
+   "english": "Back pain",
+   "nepali": "ढाड दुख्यो",
+   "romanized": "dhad dukhyo",
+   "aliases": [
+    "back pain",
+    "kammar dukhyo",
+    "dhad dukhne",
+    "kammar pain"
+   ],
+   "group": "physical",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "dizziness",
+   "english": "Dizziness",
+   "nepali": "रिँगटा लाग्यो",
+   "romanized": "ringta lagyo",
+   "aliases": [
+    "dizzy",
+    "dizziness",
+    "ringta",
+    "chakkar",
+    "chakkar aayo",
+    "ringata lagyo"
+   ],
+   "group": "physical",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "nausea",
+   "english": "Nausea",
+   "nepali": "वाकवाकी लाग्यो",
+   "romanized": "wakwaki lagyo",
+   "aliases": [
+    "nausea",
+    "nauseous",
+    "bakbaki",
+    "wakwaki",
+    "bakbaki lagyo"
+   ],
+   "group": "physical",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "cravings",
+   "english": "Food cravings",
+   "nepali": "खान मन लाग्यो",
+   "romanized": "khana man lagyo",
+   "aliases": [
+    "craving",
+    "cravings",
+    "sweet craving",
+    "meetho khana man",
+    "khane man lagyo"
+   ],
+   "group": "physical",
+   "maps_to": "symptom",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "fatigue",
+   "english": "Tired",
+   "nepali": "थकाइ लाग्यो",
+   "romanized": "thakai lagyo",
+   "aliases": [
+    "tired",
+    "thakit",
+    "thakan",
+    "thakai",
+    "fatigue",
+    "exhausted",
+    "thaki",
+    "thakit feel",
+    "tired feel"
+   ],
+   "group": "energy",
+   "maps_to": "energy",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "low_energy",
+   "english": "Low energy",
+   "nepali": "कमजोरी महसुस भयो",
+   "romanized": "kamjori mahasus bhayo",
+   "aliases": [
+    "weak",
+    "kamjor",
+    "kamjori",
+    "no energy",
+    "energy kam",
+    "low energy"
+   ],
+   "group": "energy",
+   "maps_to": "energy",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "anxiety",
+   "english": "Anxiety",
+   "nepali": "चिन्ता",
+   "romanized": "chinta",
+   "aliases": [
+    "anxious",
+    "anxiety",
+    "chinta lagyo",
+    "bechaini",
+    "ghabrahat",
+    "nervous",
+    "ali anxiety",
+    "anxiety feel"
+   ],
+   "group": "emotional",
+   "maps_to": "anxiety",
+   "safety_flag": "",
+   "notes": "Ask for intensity on the confirmation card; never guess it.",
+   "review": ""
+  },
+  {
+   "id": "stress",
+   "english": "Stress",
+   "nepali": "तनाव",
+   "romanized": "tanab",
+   "aliases": [
+    "stress",
+    "stressed",
+    "tension",
+    "tension lagyo",
+    "tanav",
+    "tanaw"
+   ],
+   "group": "emotional",
+   "maps_to": "mood",
+   "safety_flag": "",
+   "notes": "'Tension' can mean stress or worry. The user confirms.",
+   "review": "check"
+  },
+  {
+   "id": "low_mood",
+   "english": "Low mood",
+   "nepali": "मन उदास भयो",
+   "romanized": "man udas bhayo",
+   "aliases": [
+    "sad",
+    "udas",
+    "man udas",
+    "man dukhi",
+    "feeling low",
+    "low mood",
+    "dukhi"
+   ],
+   "group": "emotional",
+   "maps_to": "mood",
+   "safety_flag": "clinician_review",
+   "notes": "Words like depressed are deliberately not matched. Safety wording to be written with a clinical reviewer.",
+   "review": ""
+  },
+  {
+   "id": "irritability",
+   "english": "Irritable",
+   "nepali": "रिस उठ्यो",
+   "romanized": "ris uthyo",
+   "aliases": [
+    "irritable",
+    "irritated",
+    "ris",
+    "chidchide",
+    "chidchidapan",
+    "ris uthyo"
+   ],
+   "group": "emotional",
+   "maps_to": "mood",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "mood_swings",
+   "english": "Mood swings",
+   "nepali": "मुड परिवर्तन",
+   "romanized": "mood parivartan",
+   "aliases": [
+    "mood swing",
+    "mood change",
+    "mood badaliyo",
+    "mood swings"
+   ],
+   "group": "emotional",
+   "maps_to": "mood",
+   "safety_flag": "",
+   "notes": "",
+   "review": "check"
+  },
+  {
+   "id": "happy",
+   "english": "Feeling good",
+   "nepali": "राम्रो महसुस भयो",
+   "romanized": "ramro mahasus bhayo",
+   "aliases": [
+    "happy",
+    "feeling good",
+    "khushi",
+    "khusi",
+    "ramro lagyo",
+    "good mood"
+   ],
+   "group": "emotional",
+   "maps_to": "mood",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "poor_sleep",
+   "english": "Poor sleep",
+   "nepali": "निद्रा लागेन",
+   "romanized": "nidra lagena",
+   "aliases": [
+    "poor sleep",
+    "nindra lagena",
+    "ninda lagena",
+    "can't sleep",
+    "cant sleep",
+    "sleepless",
+    "sleep nabhayo",
+    "nidra nabhayo"
+   ],
+   "group": "sleep",
+   "maps_to": "sleep",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  },
+  {
+   "id": "slept_well",
+   "english": "Slept well",
+   "nepali": "राम्रो निद्रा लाग्यो",
+   "romanized": "ramro nidra lagyo",
+   "aliases": [
+    "slept well",
+    "good sleep",
+    "ramro sutyo",
+    "ramro nindra"
+   ],
+   "group": "sleep",
+   "maps_to": "sleep",
+   "safety_flag": "",
+   "notes": "",
+   "review": ""
+  }
+ ]
+}

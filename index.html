@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1F7A6D">
 <link rel="manifest" href="manifest.json">
+<script src="parser.js"></script>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Dhara</title>
@@ -43,6 +44,10 @@ nav button[aria-current=page]{color:var(--teal);font-weight:600}
 nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .card .btn.alt{width:100%}
 .rec{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.ent{padding:9px 0;border-top:1px solid var(--line);font-size:15px}
+.ent b{font-weight:600}
+.tag{display:inline-block;font-size:12px;background:var(--mist);border-radius:999px;padding:2px 10px;margin:0 4px 6px 0}
+.tag.o{background:var(--goldsoft);color:var(--caution)}
 button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--deep);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86%;text-align:center}
 #toast.on{opacity:1}
@@ -70,6 +75,13 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="chip" data-t="Cramps today. ">Cramps</button>
     <button class="chip" data-t="Feeling anxious. ">Anxious</button>
   </div>
+  <div class="muted" style="margin-bottom:6px">Try an example</div>
+  <div class="row" style="margin-bottom:14px">
+    <button class="chip ex" data-t="had momo for lunch, feeling anxious, period is 5 days late">English</button>
+    <button class="chip ex" data-t="Aaja bihana chiya ra roti khaye, dinbhari tired feel bhayo ani ali anxiety pani thiyo.">Romanized</button>
+    <button class="chip ex" data-t="आज दिउँसो मोमो खाएँ र चिन्ता भयो">नेपाली</button>
+  </div>
+  <div id="parseOut" hidden></div>
   <div class="card"><h2>Your cycle</h2><p class="muted">No periods logged yet. Cycle tracking opens in Cycle.</p></div>
   <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><path d="M2 18 C14 4 26 4 36 18 S58 32 70 14" fill="none" stroke="#1F7A6D" stroke-width="3" stroke-linecap="round"/></svg><h2>Start your first entry</h2><p class="muted">Tell Dhara about your day above. It takes about a minute.</p></div>
 </section>
@@ -94,12 +106,13 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="exportBtn">Export all data</button>
     <button class="btn alt" id="delBtn" style="background:var(--surface);color:var(--rose);border:1px solid var(--rose)">Delete all data</button>
   </div>
+  <div class="card"><h2>Nepal vocabulary</h2><p class="muted" id="vocabInfo">Loading…</p></div>
   <div class="card"><h2>Test tools</h2>
     <p class="muted">Temporary, for checking storage. These are removed before the final version.</p>
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 2, version 2. Records now save on this phone.</div>
+  <div class="note">Build: Module 4, version 4. Messages are read on this phone. Nothing is saved from them yet.</div>
 </section>
 </main>
 
@@ -137,12 +150,45 @@ function show(){
 window.addEventListener('hashchange',show);show();
 function toast(m){toastEl.textContent=m;toastEl.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){toastEl.classList.remove('on')},2200)}
 var msg=document.getElementById('msg');
-Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(c){
+Array.prototype.forEach.call(document.querySelectorAll('.chip:not(.ex)'),function(c){
   c.onclick=function(){msg.value+=c.dataset.t;msg.focus()};
 });
+Array.prototype.forEach.call(document.querySelectorAll('.ex'),function(c){
+  c.onclick=function(){msg.value=c.dataset.t;msg.focus()};
+});
+var CATL={food:'Food',symptom:'Symptom',mood:'Mood',anxiety:'Anxiety',energy:'Energy',sleep:'Sleep',cycle:'Cycle',note:'Note'};
+var LANGL={english:'English',nepali:'Nepali',romanized_nepali:'Romanized Nepali',mixed:'Mixed languages'};
+var UNCL={portion_not_stated:'portion not stated',intensity_not_stated:'intensity not stated',meal_type_not_stated:'meal time not stated',date_not_stated:'date not stated',days_late_not_stated:'days late not stated',converted_from_weeks:'converted from weeks'};
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function render(res){
+  var o=document.getElementById('parseOut');o.hidden=false;o.innerHTML='';
+  var c=el('div','card');
+  c.appendChild(el('h2','','Here’s what I understood'));
+  c.appendChild(el('span','tag','Understood offline'));
+  c.appendChild(el('span','tag','Looks like: '+LANGL[res.message_language]));
+  if(!res.entries.length&&!res.skipped.length)c.appendChild(el('p','muted','I didn’t recognise anything yet. Try other words, for example a food, a feeling, or “period late”.'));
+  res.entries.forEach(function(e){
+    var d=el('div','ent');
+    var nm=(CATL[e.category]===e.normalized_name?'':CATL[e.category]+': ')+e.normalized_name;
+    if(e.meal_type)nm+=' · '+e.meal_type;
+    if(e.days_late!=null)nm+=' · '+e.days_late+' days';
+    d.appendChild(el('b','',nm));
+    var m='You wrote: “'+e.original_phrase+'”';
+    if(e.uncertainties.length)m+=' · '+e.uncertainties.map(function(u){return UNCL[u]||u}).join(', ');
+    d.appendChild(el('div','muted',m));c.appendChild(d);
+  });
+  res.skipped.forEach(function(e){
+    var d=el('div','ent');d.appendChild(el('b','','Not logged: '+e.normalized_name));
+    d.appendChild(el('div','muted','You wrote “'+e.original_phrase+'” with a “no” or “not”.'));c.appendChild(d);
+  });
+  c.appendChild(el('p','muted','Nothing is saved yet. Saving after you confirm arrives in Module 5.'));
+  o.appendChild(c);
+}
 document.getElementById('send').onclick=function(){
-  if(!msg.value.trim()){toast('Write a few words first');return}
-  toast('Understanding messages arrives in Module 4');
+  var v=msg.value.trim();
+  if(!v){toast('Write a few words first');return}
+  if(!window.Parser||!window.VOCAB){toast('Still loading. Try again in a moment.');return}
+  render(Parser.parse(v));
 };
 Array.prototype.forEach.call(document.querySelectorAll('[data-soon]'),function(b){
   b.onclick=function(){toast(b.dataset.soon)};
@@ -163,7 +209,7 @@ var DB=(function(){
     if(SRC.indexOf(r.source)<0)throw new Error('bad source');
     var t=r.occurred_at?new Date(r.occurred_at):null;
     if(t&&isNaN(t))throw new Error('bad date');
-    return {id:id(),category:r.category,normalized_name:r.normalized_name||null,original_phrase:r.original_phrase||null,meal_type:r.meal_type||null,intensity:r.intensity==null?null:r.intensity,days_late:r.days_late==null?null:r.days_late,occurred_at:t?t.toISOString():null,confidence:r.confidence==null?null:r.confidence,uncertainties:r.uncertainties||[],source:r.source,created_at:now(),updated_at:now()};
+    return {id:id(),category:r.category,normalized_name:r.normalized_name||null,original_phrase:r.original_phrase||null,meal_type:r.meal_type||null,intensity:r.intensity==null?null:r.intensity,days_late:r.days_late==null?null:r.days_late,vocab_id:r.vocab_id||null,occurred_at:t?t.toISOString():null,confidence:r.confidence==null?null:r.confidence,uncertainties:r.uncertainties||[],source:r.source,created_at:now(),updated_at:now()};
   }
   load();
   return{
@@ -208,6 +254,10 @@ delBtn.onclick=function(){
 };
 renderData();
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(function(){})}
+fetch('vocab.json').then(function(r){return r.json()}).then(function(v){
+  window.VOCAB=v;if(window.Parser)Parser.init(v);
+  document.getElementById('vocabInfo').textContent=v.foods.length+' foods and '+v.symptoms.length+' symptoms and moods loaded. Works without internet.';
+}).catch(function(){document.getElementById('vocabInfo').textContent='Couldn’t load the vocabulary. Open Dhara once while online.'});
 var net=document.getElementById('net');
 function status(){var on=navigator.onLine;net.textContent=on?'Online':'Offline. Everything still works';net.className=on?'':'off'}
 window.addEventListener('online',status);window.addEventListener('offline',status);status();
