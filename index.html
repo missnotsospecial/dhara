@@ -87,13 +87,11 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="chip ex" data-t="आज दिउँसो मोमो खाएँ र चिन्ता भयो">नेपाली</button>
   </div>
   <div id="parseOut" hidden></div>
-  <div class="card"><h2>Your cycle</h2><p class="muted">No periods logged yet. Cycle tracking opens in Cycle.</p></div>
+  <div class="card" id="homeCycle"></div>
   <div id="today"></div>
 </section>
 
-<section id="cycle" hidden>
-  <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><circle cx="36" cy="16" r="12" fill="#F6DDE3" stroke="#B8435F" stroke-width="2" stroke-dasharray="4 3"/></svg><h2>Add your last period</h2><p class="muted">Dates you add here stay on this phone and work without internet.</p><button class="btn alt" data-soon="Cycle tracker arrives in Module 6">Add period</button></div>
-</section>
+<section id="cycle" hidden><div id="cycleBox"></div></section>
 
 <section id="patterns" hidden>
   <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><path d="M4 26 L22 14 L38 20 L68 4" fill="none" stroke="#1F7A6D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h2>Patterns appear with time</h2><p class="muted">After a few weeks of logging, Dhara can describe what showed up together in your records.</p></div>
@@ -117,7 +115,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 5, version 5. Messages are read on this phone and saved only after you confirm.</div>
+  <div class="note">Build: Module 6, version 6. Cycle dates save on this phone.</div>
 </section>
 </main>
 
@@ -305,6 +303,133 @@ document.getElementById('send').onclick=function(){
 Array.prototype.forEach.call(document.querySelectorAll('[data-soon]'),function(b){
   b.onclick=function(){toast(b.dataset.soon)};
 });
+var cyMonth=new Date();cyMonth=new Date(cyMonth.getFullYear(),cyMonth.getMonth(),1);
+var cyDate=null,cyWarn=null;
+function dnum(k){var p=k.split('-');return Math.round(Date.UTC(+p[0],+p[1]-1,+p[2])/864e5)}
+function dkey(n){var d=new Date(n*864e5);return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())}
+function fmtD(k,y){var p=k.split('-');return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-GB',y?{day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'})}
+function noon(k){return new Date(k+'T12:00:00').toISOString()}
+function cycleData(){
+  var st=[],en=[],rep=[];
+  DB.all().forEach(function(r){
+    if(r.category!=='cycle'||!r.occurred_at)return;
+    var dy=dayKey(new Date(r.occurred_at));
+    if(r.vocab_id==='period_started')st.push({day:dy,id:r.id});
+    else if(r.vocab_id==='period_ended')en.push({day:dy,id:r.id});
+    else if(r.vocab_id==='period_late'||r.vocab_id==='missed_period')rep.push(r);
+  });
+  function by(a,b){return a.day<b.day?-1:a.day>b.day?1:0}
+  st.sort(by);en.sort(by);
+  var seen={};st=st.filter(function(x){if(seen[x.day])return false;seen[x.day]=1;return true});
+  var periods=st.map(function(x,i){
+    var nx=st[i+1]?dnum(st[i+1].day):null,sn=dnum(x.day);
+    var e=en.filter(function(y){var n=dnum(y.day);return n>=sn&&(nx==null||n<nx)})[0]||null;
+    return{start:x.day,id:x.id,end:e?e.day:null,endId:e?e.id:null,len:nx==null?null:nx-sn,dur:e?dnum(e.day)-sn+1:null};
+  });
+  var lens=periods.filter(function(x){return x.len!=null}).map(function(x){return x.len}).slice(-6);
+  var avg=lens.length?Math.round(lens.reduce(function(a,b){return a+b},0)/lens.length):null;
+  rep.sort(function(a,b){return a.occurred_at<b.occurred_at?1:-1});
+  return{periods:periods,lens:lens,avg:avg,min:lens.length?Math.min.apply(null,lens):null,max:lens.length?Math.max.apply(null,lens):null,rep:rep};
+}
+function addStart(day){
+  var d=cycleData();
+  if(d.periods.some(function(x){return x.start===day})){toast('That start date is already logged');return}
+  var near=d.periods.filter(function(x){return Math.abs(dnum(x.start)-dnum(day))<10})[0];
+  if(near&&cyWarn!==day){cyWarn=day;renderCycle();toast('Only '+Math.abs(dnum(near.start)-dnum(day))+' days from another start. Tap again to add anyway.');return}
+  cyWarn=null;
+  if(DB.add({category:'cycle',normalized_name:'Period started',vocab_id:'period_started',occurred_at:noon(day),source:'manual'})){renderData();toast('Period start saved')}
+}
+function addEnd(day){
+  var d=cycleData(),dn=dnum(day),p=null;
+  d.periods.forEach(function(x){if(dnum(x.start)<=dn)p=x});
+  if(!p){toast('Add the period start date first');return}
+  if(p.end){toast('That period already has an end date');return}
+  if(DB.add({category:'cycle',normalized_name:'Period ended',vocab_id:'period_ended',occurred_at:noon(day),source:'manual'})){renderData();toast('Period end saved')}
+}
+function renderCycle(){
+  var box=document.getElementById('cycleBox');if(!box)return;
+  var d=cycleData(),t=todayISO(),tn=dnum(t),P=d.periods,lastP=P[P.length-1];
+  var cur=lastP?tn-dnum(lastP.start)+1:null;
+  if(cur!=null&&cur<1)cur=null;
+  var est=null,passed=false;
+  if(lastP&&d.lens.length>=2){est={a:dnum(lastP.start)+d.min,b:dnum(lastP.start)+d.max};passed=est.b<tn}
+  var hc=document.getElementById('homeCycle');
+  if(hc){hc.innerHTML='';hc.appendChild(el('h2','','Your cycle'));
+    hc.appendChild(el('p','muted',cur?('Day '+cur+' of this cycle'+(d.avg?' · average '+d.avg+' days':'')+'.'):'No periods logged yet. Add your last period in Cycle.'));
+    var o=btn('Open Cycle','chip',function(){location.hash='cycle'});o.style.marginTop='8px';hc.appendChild(o)}
+  box.innerHTML='';
+  var sc=el('div','card');
+  sc.appendChild(el('h2','',cur?'Day '+cur+' of this cycle':'No periods logged yet'));
+  var sub=!cur?'Add your last period start below. Dates stay on this phone and work without internet.':
+    (d.avg?'Your average cycle is '+d.avg+' days (from '+d.lens.length+(d.lens.length===1?' cycle':' cycles')+').':'Add another period start to see your cycle length.')+(d.avg&&cur>d.avg?' This cycle is '+(cur-d.avg)+' days longer than your average.':'');
+  sc.appendChild(el('p','muted',sub));
+  if(cur&&cur>=90)sc.appendChild(el('div','note','It has been 90 days or more since your last logged period start. Dhara can’t tell you why, but a doctor can. It’s worth booking a visit.')).style.marginTop='10px';
+  box.appendChild(sc);
+  var ec=el('div','card');ec.appendChild(el('h2','','Next period estimate'));
+  var et=!P.length?'Log a period to begin.':!est?'Add at least 3 period start dates to see an estimate.':
+    passed?'Your usual window ('+fmtD(dkey(est.a))+' to '+fmtD(dkey(est.b))+') has passed.':'Between '+fmtD(dkey(est.a))+' and '+fmtD(dkey(est.b))+'.';
+  ec.appendChild(el('p','',et));
+  ec.appendChild(el('p','muted','Estimates are a guide, not a promise. They are less reliable when cycles are irregular.')).style.marginTop='4px';
+  box.appendChild(ec);
+  // calendar
+  var cc=el('div','card'),hd=el('div','rowx');
+  hd.appendChild(btn('‹','chip',function(){cyMonth=new Date(cyMonth.getFullYear(),cyMonth.getMonth()-1,1);renderCycle()})).setAttribute('aria-label','Previous month');
+  hd.appendChild(el('b','',cyMonth.toLocaleDateString('en-GB',{month:'long',year:'numeric'})));
+  hd.appendChild(btn('›','chip',function(){cyMonth=new Date(cyMonth.getFullYear(),cyMonth.getMonth()+1,1);renderCycle()})).setAttribute('aria-label','Next month');
+  cc.appendChild(hd);
+  var pd={},ed={},sd={};
+  P.forEach(function(x){var a=dnum(x.start),b=x.end?dnum(x.end):a;for(var i=a;i<=b;i++)pd[dkey(i)]=1});
+  if(est&&!passed)for(var i=est.a;i<=est.b;i++)if(i>tn)ed[dkey(i)]=1;
+  DB.all().forEach(function(r){if(r.category==='symptom'&&r.occurred_at)sd[dayKey(new Date(r.occurred_at))]=1});
+  var g=el('div');g.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px;text-align:center;font-size:14px';
+  ['S','M','T','W','T','F','S'].forEach(function(x){var h=el('div','',x);h.style.color='var(--slate)';g.appendChild(h)});
+  var y=cyMonth.getFullYear(),mo=cyMonth.getMonth(),first=new Date(y,mo,1).getDay(),nd=new Date(y,mo+1,0).getDate();
+  for(var k=0;k<first;k++)g.appendChild(el('div'));
+  for(var n=1;n<=nd;n++){
+    var key=y+'-'+pad(mo+1)+'-'+pad(n),c=el('div','',String(n)),st='height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;',lab=n+' '+cyMonth.toLocaleDateString('en-GB',{month:'long'});
+    if(pd[key]){st+='background:var(--rose);color:#fff;';lab+=', period'}
+    else if(ed[key]){st+='background:var(--rosesoft);border:1px dashed var(--rose);';lab+=', estimated period'}
+    if(key===t)st+='box-shadow:0 0 0 2px var(--teal);';
+    c.style.cssText=st;c.setAttribute('aria-label',lab);
+    if(sd[key]){var dot=el('span');dot.style.cssText='width:5px;height:5px;border-radius:50%;background:'+(pd[key]?'#fff':'var(--teal)')+';margin-top:1px';c.appendChild(dot)}
+    g.appendChild(c);
+  }
+  cc.appendChild(g);
+  var lg=el('div','muted','● Period (solid) · dashed = estimate · dot = symptom logged · ring = today');lg.style.cssText='font-size:12px;margin-top:10px';cc.appendChild(lg);
+  box.appendChild(cc);
+  // log form
+  var lc=el('div','card');lc.appendChild(el('h2','','Log a period'));
+  var di=el('input','in');di.type='date';di.setAttribute('aria-label','Date of period');di.max=t;di.value=cyDate||t;
+  di.onchange=function(){cyDate=di.value||t;cyWarn=null;renderCycle()};
+  lc.appendChild(di);
+  var warn=cyWarn&&cyWarn===(cyDate||t);
+  lc.appendChild(btn(warn?'Tap again to add anyway':'Period started','btn alt',function(){addStart(di.value||t)}));
+  lc.appendChild(btn('Period ended','btn alt',function(){addEnd(di.value||t)})).style.background='var(--teal)';
+  box.appendChild(lc);
+  // history
+  if(P.length){
+    var hc2=el('div','card');hc2.appendChild(el('h2','','Cycle history'));
+    P.slice().reverse().forEach(function(x){
+      var r=el('div','ent rowx'),l=el('div');
+      l.appendChild(el('b','',fmtD(x.start,1)+(x.end?' to '+fmtD(x.end):'')));
+      var m=(x.len!=null?'Cycle length '+x.len+' days':'Current cycle')+(x.dur?' · period lasted '+x.dur+' days':' · end not recorded');
+      if(x.len!=null&&(x.len<21||x.len>35))m+=' · outside the typical 21 to 35 day range';
+      l.appendChild(el('div','muted',m));r.appendChild(l);
+      r.appendChild(btn('Remove','chip',function(){DB.remove(x.id);if(x.endId)DB.remove(x.endId);renderData();toast('Period removed')}));
+      hc2.appendChild(r);
+    });
+    hc2.appendChild(el('p','muted','Typical cycles are about 21 to 35 days. Longer or shorter cycles are worth mentioning to a doctor. Dhara can’t diagnose.')).style.marginTop='8px';
+    box.appendChild(hc2);
+  }
+  if(d.rep.length){
+    var rc=el('div','card');rc.appendChild(el('h2','','Things you told Dhara'));
+    d.rep.slice(0,5).forEach(function(r){
+      var x=el('div','ent');x.appendChild(el('b','',label(r)));
+      x.appendChild(el('div','muted',fmtD(dayKey(new Date(r.occurred_at)),1)));rc.appendChild(x);
+    });
+    box.appendChild(rc);
+  }
+}
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
   var data={schema_version:1,records:[]};
@@ -335,7 +460,7 @@ var DB=(function(){
 var testBtn=document.getElementById('testBtn'),exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
 function fmt(iso){try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function renderData(){
-  renderToday();
+  renderToday();renderCycle();
   var all=DB.all();
   document.getElementById('dataInfo').textContent=all.length+(all.length===1?' record':' records')+' saved on this phone. Nothing leaves your device.';
   var l=document.getElementById('recList');l.innerHTML='';
