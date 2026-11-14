@@ -48,6 +48,11 @@ nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;st
 .ent b{font-weight:600}
 .tag{display:inline-block;font-size:12px;background:var(--mist);border-radius:999px;padding:2px 10px;margin:0 4px 6px 0}
 .tag.o{background:var(--goldsoft);color:var(--caution)}
+.rowx{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.acts{display:flex;gap:6px;flex:none}
+.in{font:inherit;color:var(--deep);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-height:44px}
+.lbl{font-size:13px;color:var(--slate);margin:8px 0 2px}
+.link{border:0;background:none;font:inherit;color:var(--teal);padding:10px 4px;min-height:44px}
 button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--deep);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86%;text-align:center}
 #toast.on{opacity:1}
@@ -83,7 +88,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
   </div>
   <div id="parseOut" hidden></div>
   <div class="card"><h2>Your cycle</h2><p class="muted">No periods logged yet. Cycle tracking opens in Cycle.</p></div>
-  <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><path d="M2 18 C14 4 26 4 36 18 S58 32 70 14" fill="none" stroke="#1F7A6D" stroke-width="3" stroke-linecap="round"/></svg><h2>Start your first entry</h2><p class="muted">Tell Dhara about your day above. It takes about a minute.</p></div>
+  <div id="today"></div>
 </section>
 
 <section id="cycle" hidden>
@@ -112,7 +117,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 4, version 4. Messages are read on this phone. Nothing is saved from them yet.</div>
+  <div class="note">Build: Module 5, version 5. Messages are read on this phone and saved only after you confirm.</div>
 </section>
 </main>
 
@@ -160,35 +165,142 @@ var CATL={food:'Food',symptom:'Symptom',mood:'Mood',anxiety:'Anxiety',energy:'En
 var LANGL={english:'English',nepali:'Nepali',romanized_nepali:'Romanized Nepali',mixed:'Mixed languages'};
 var UNCL={portion_not_stated:'portion not stated',intensity_not_stated:'intensity not stated',meal_type_not_stated:'meal time not stated',date_not_stated:'date not stated',days_late_not_stated:'days late not stated',converted_from_weeks:'converted from weeks'};
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
-function render(res){
-  var o=document.getElementById('parseOut');o.hidden=false;o.innerHTML='';
+var INTL={1:'mild',2:'moderate',3:'strong'};
+var SRCL={offline_rules:'understood offline',ai:'understood by AI',manual:'added by you',sample:'sample data',test:'test'};
+var draft=null;
+function pad(n){return String(n).padStart(2,'0')}
+function dayKey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function todayISO(){return dayKey(new Date())}
+function label(e){
+  var nm=(CATL[e.category]===e.normalized_name?'':CATL[e.category]+': ')+e.normalized_name;
+  if(e.meal_type)nm+=' · '+e.meal_type;
+  if(e.days_late!=null)nm+=' · '+e.days_late+' days';
+  if(e.intensity)nm+=' · '+INTL[e.intensity];
+  return nm;
+}
+function btn(txt,cls,fn){var b=el('button',cls,txt);b.onclick=fn;return b}
+function sel(opts,val){
+  var x=el('select','in');
+  opts.forEach(function(o){var op=el('option','',o[1]);op.value=o[0];if(String(o[0])===String(val==null?'':val))op.selected=true;x.appendChild(op)});
+  return x;
+}
+function setUnc(e,k,on){
+  e.uncertainties=e.uncertainties.filter(function(u){return u!==k});
+  if(on)e.uncertainties.push(k);
+}
+function openCard(res,text){
+  res.entries.forEach(function(e){e.source='offline_rules';e.intensity=null});
+  draft={entries:res.entries,skipped:res.skipped,lang:res.message_language,date:todayISO(),editing:-1};
+  renderCard();
+  document.getElementById('parseOut').scrollIntoView({block:'start'});
+}
+function closeCard(){draft=null;var o=document.getElementById('parseOut');o.hidden=true;o.innerHTML=''}
+function editor(e){
+  var d=el('div','ent'),mealS=null,daysIn=null,intS=null;
+  var nameIn=el('input','in');nameIn.value=e.normalized_name;nameIn.setAttribute('aria-label','Name');
+  d.appendChild(el('div','lbl','Name'));d.appendChild(nameIn);
+  if(e.category==='food'){d.appendChild(el('div','lbl','Meal time'));mealS=sel([['','Not stated'],['breakfast','Breakfast'],['lunch','Lunch'],['snack','Snack'],['dinner','Dinner']],e.meal_type);d.appendChild(mealS)}
+  if(e.vocab_id==='period_late'){d.appendChild(el('div','lbl','Days late'));daysIn=el('input','in');daysIn.type='number';daysIn.min=1;daysIn.max=120;daysIn.value=e.days_late==null?'':e.days_late;d.appendChild(daysIn)}
+  if(['symptom','mood','anxiety','energy','sleep'].indexOf(e.category)>=0){d.appendChild(el('div','lbl','How strong?'));intS=sel([['','Not recorded'],[1,'Mild'],[2,'Moderate'],[3,'Strong']],e.intensity);d.appendChild(intS)}
+  var row=el('div','row');row.style.marginTop='10px';
+  row.appendChild(btn('Done','chip',function(){
+    var nv=nameIn.value.trim();if(nv)e.normalized_name=nv;
+    if(mealS){e.meal_type=mealS.value||null;setUnc(e,'meal_type_not_stated',!e.meal_type)}
+    if(daysIn){var n=parseInt(daysIn.value,10);if(n>=1&&n<=120){e.days_late=n;setUnc(e,'days_late_not_stated',false)}else{e.days_late=null;setUnc(e,'days_late_not_stated',true)}}
+    if(intS){e.intensity=intS.value?parseInt(intS.value,10):null;setUnc(e,'intensity_not_stated',!e.intensity)}
+    draft.editing=-1;renderCard();
+  }));
+  row.appendChild(btn('Cancel','chip',function(){draft.editing=-1;renderCard()}));
+  d.appendChild(row);return d;
+}
+function addBox(){
+  var d=el('div','ent');d.appendChild(el('b','','Add something I missed'));
+  var cs=sel([['food','Food'],['symptom','Symptom'],['mood','Mood'],['anxiety','Anxiety'],['energy','Energy'],['sleep','Sleep']],'food');cs.style.marginTop='6px';
+  var ti=el('input','in');ti.placeholder='e.g. a dish that isn’t listed';ti.setAttribute('aria-label','What did I miss?');ti.style.margin='6px 0 8px';
+  d.appendChild(cs);d.appendChild(ti);
+  d.appendChild(btn('Add','chip',function(){
+    var v=ti.value.trim();if(!v){toast('Type what you want to add');return}
+    var c=cs.value;
+    draft.entries.push({category:c,normalized_name:v,original_phrase:v,meal_type:null,days_late:null,intensity:null,vocab_id:null,source:'manual',
+      uncertainties:c==='food'?['portion_not_stated','meal_type_not_stated']:['intensity_not_stated']});
+    renderCard();
+  }));
+  return d;
+}
+function renderCard(){
+  var o=document.getElementById('parseOut');o.innerHTML='';
+  if(!draft){o.hidden=true;return}
+  o.hidden=false;
   var c=el('div','card');
   c.appendChild(el('h2','','Here’s what I understood'));
   c.appendChild(el('span','tag','Understood offline'));
-  c.appendChild(el('span','tag','Looks like: '+LANGL[res.message_language]));
-  if(!res.entries.length&&!res.skipped.length)c.appendChild(el('p','muted','I didn’t recognise anything yet. Try other words, for example a food, a feeling, or “period late”.'));
-  res.entries.forEach(function(e){
-    var d=el('div','ent');
-    var nm=(CATL[e.category]===e.normalized_name?'':CATL[e.category]+': ')+e.normalized_name;
-    if(e.meal_type)nm+=' · '+e.meal_type;
-    if(e.days_late!=null)nm+=' · '+e.days_late+' days';
-    d.appendChild(el('b','',nm));
+  c.appendChild(el('span','tag','Looks like: '+LANGL[draft.lang]));
+  var dr=el('div','ent');dr.appendChild(el('div','lbl','When'));
+  var di=el('input','in');di.type='date';di.value=draft.date;di.max=todayISO();di.setAttribute('aria-label','Date');
+  di.onchange=function(){if(di.value)draft.date=di.value};
+  dr.appendChild(di);c.appendChild(dr);
+  if(!draft.entries.length)c.appendChild(el('p','muted','Nothing found yet. You can add things below.'));
+  draft.entries.forEach(function(e,i){
+    if(draft.editing===i){c.appendChild(editor(e));return}
+    var d=el('div','ent rowx'),left=el('div');
+    left.appendChild(el('b','',label(e)));
     var m='You wrote: “'+e.original_phrase+'”';
     if(e.uncertainties.length)m+=' · '+e.uncertainties.map(function(u){return UNCL[u]||u}).join(', ');
-    d.appendChild(el('div','muted',m));c.appendChild(d);
+    left.appendChild(el('div','muted',m));
+    var a=el('div','acts');
+    a.appendChild(btn('Edit','chip',function(){draft.editing=i;renderCard()}));
+    a.appendChild(btn('Remove','chip',function(){draft.entries.splice(i,1);draft.editing=-1;renderCard()}));
+    d.appendChild(left);d.appendChild(a);c.appendChild(d);
   });
-  res.skipped.forEach(function(e){
+  draft.skipped.forEach(function(e){
     var d=el('div','ent');d.appendChild(el('b','','Not logged: '+e.normalized_name));
     d.appendChild(el('div','muted','You wrote “'+e.original_phrase+'” with a “no” or “not”.'));c.appendChild(d);
   });
-  c.appendChild(el('p','muted','Nothing is saved yet. Saving after you confirm arrives in Module 5.'));
-  o.appendChild(c);
+  c.appendChild(addBox());
+  c.appendChild(el('p','muted','Nothing is saved until you tap Save.')).style.margin='10px 0 0';
+  var sv=btn('Save all','btn',saveAll);sv.style.cssText='width:100%;margin:10px 0 0';c.appendChild(sv);
+  var row=el('div','row');row.style.justifyContent='space-around';
+  row.appendChild(btn('Edit message','link',function(){closeCard();msg.focus()}));
+  row.appendChild(btn('Discard','link',function(){closeCard();toast('Nothing was saved')}));
+  c.appendChild(row);o.appendChild(c);
+}
+function saveAll(){
+  if(!draft||!draft.entries.length){toast('Nothing to save yet');return}
+  var when=draft.date===todayISO()?new Date():new Date(draft.date+'T12:00:00'),n=0;
+  try{
+    draft.entries.forEach(function(e){
+      var r=DB.add({category:e.category,normalized_name:e.normalized_name,original_phrase:e.original_phrase,meal_type:e.meal_type,intensity:e.intensity,days_late:e.days_late,occurred_at:when.toISOString(),uncertainties:e.uncertainties,vocab_id:e.vocab_id,source:e.source});
+      if(r)n++;
+    });
+  }catch(err){toast('Couldn’t save one entry. Please check it.');renderData();return}
+  closeCard();msg.value='';renderData();
+  toast('Saved '+n+(n===1?' entry':' entries'));
+}
+function renderToday(){
+  var h=document.getElementById('today');if(!h)return;h.innerHTML='';
+  var t=todayISO();
+  var recs=DB.all().filter(function(r){return r.occurred_at&&dayKey(new Date(r.occurred_at))===t}).sort(function(a,b){return a.created_at<b.created_at?1:-1});
+  var c=el('div','card');
+  if(!recs.length){
+    c.className='card empty';c.appendChild(el('h2','','Start your first entry'));
+    c.appendChild(el('p','muted','Tell Dhara about your day above. It takes about a minute.'));h.appendChild(c);return;
+  }
+  c.appendChild(el('h2','','Today'));
+  recs.forEach(function(r){
+    var d=el('div','ent rowx'),left=el('div');
+    left.appendChild(el('b','',label(r)));
+    left.appendChild(el('div','muted',new Date(r.occurred_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' · '+(SRCL[r.source]||r.source)));
+    d.appendChild(left);
+    d.appendChild(btn('Remove','chip',function(){DB.remove(r.id);renderData();toast('Entry removed')}));
+    c.appendChild(d);
+  });
+  h.appendChild(c);
 }
 document.getElementById('send').onclick=function(){
   var v=msg.value.trim();
   if(!v){toast('Write a few words first');return}
   if(!window.Parser||!window.VOCAB){toast('Still loading. Try again in a moment.');return}
-  render(Parser.parse(v));
+  openCard(Parser.parse(v),v);
 };
 Array.prototype.forEach.call(document.querySelectorAll('[data-soon]'),function(b){
   b.onclick=function(){toast(b.dataset.soon)};
@@ -223,6 +335,7 @@ var DB=(function(){
 var testBtn=document.getElementById('testBtn'),exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
 function fmt(iso){try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function renderData(){
+  renderToday();
   var all=DB.all();
   document.getElementById('dataInfo').textContent=all.length+(all.length===1?' record':' records')+' saved on this phone. Nothing leaves your device.';
   var l=document.getElementById('recList');l.innerHTML='';
