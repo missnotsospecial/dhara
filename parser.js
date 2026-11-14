@@ -125,6 +125,8 @@ function parse(text){
   var seen={};entries=entries.filter(function(x){var k=x.vocab_id+'|'+x.meal_type+'|'+x.days_late;if(seen[k])return false;seen[k]=1;return true});
   return{schema_version:'1.1',message_language:language(text),source_layer:'offline_rules',entries:entries,skipped:skipped,requires_confirmation:true};
 }
-var P={init:function(v){state=build(v)},parse:parse};
+var P={init:function(v){state=build(v)},parse:parse,
+ norm:function(s){return words(s).map(nt).filter(Boolean)},
+ find:function(s){if(!state)return null;var t=words(s).map(nt).filter(Boolean);if(!t.length||t.length>state.max)return null;return lookup(t,0,t.length)}};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.Parser=P;
 })(typeof window!=='undefined'?window:this);

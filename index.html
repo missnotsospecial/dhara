@@ -53,6 +53,8 @@ nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;st
 .in{font:inherit;color:var(--deep);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-height:44px}
 .lbl{font-size:13px;color:var(--slate);margin:8px 0 2px}
 .link{border:0;background:none;font:inherit;color:var(--teal);padding:10px 4px;min-height:44px}
+.chk{display:flex;align-items:center;gap:10px;margin:12px 0}
+.chk input{width:24px;height:24px;flex:none}
 button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--deep);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86%;text-align:center}
 #toast.on{opacity:1}
@@ -109,13 +111,25 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="exportBtn">Export all data</button>
     <button class="btn alt" id="delBtn" style="background:var(--surface);color:var(--rose);border:1px solid var(--rose)">Delete all data</button>
   </div>
+  <div class="card" id="aiCard"><h2>AI helper (optional)</h2>
+    <p class="muted">Dhara works fully without AI. When this is on and you are online, Google’s Gemini also reads your message to understand more words. The text of your message is sent to Google. On the free tier Google may use it to improve its products, and people may review it. Use made-up messages only.</p>
+    <label class="chk"><input type="checkbox" id="aiOn"><span>Use Gemini AI when online</span></label>
+    <div class="lbl">Gemini API key (stays on this phone)</div>
+    <input class="in" id="aiKey" type="password" autocomplete="off" aria-label="Gemini API key" placeholder="Paste your key">
+    <div class="lbl">Model</div>
+    <input class="in" id="aiModel" autocomplete="off" aria-label="Model name">
+    <button class="btn alt" id="aiSave">Save settings</button>
+    <button class="btn alt" id="aiTest">Test connection</button>
+    <p class="muted" id="aiStatus" role="status"></p>
+    <button class="link" id="aiRemove">Remove key from this phone</button>
+  </div>
   <div class="card"><h2>Nepal vocabulary</h2><p class="muted" id="vocabInfo">Loading…</p></div>
   <div class="card"><h2>Test tools</h2>
     <p class="muted">Temporary, for checking storage. These are removed before the final version.</p>
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 6, version 6. Cycle dates save on this phone.</div>
+  <div class="note">Build: Module 7, version 7. Optional AI helper added.</div>
 </section>
 </main>
 
@@ -161,7 +175,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.ex'),function(c){
 });
 var CATL={food:'Food',symptom:'Symptom',mood:'Mood',anxiety:'Anxiety',energy:'Energy',sleep:'Sleep',cycle:'Cycle',note:'Note'};
 var LANGL={english:'English',nepali:'Nepali',romanized_nepali:'Romanized Nepali',mixed:'Mixed languages'};
-var UNCL={portion_not_stated:'portion not stated',intensity_not_stated:'intensity not stated',meal_type_not_stated:'meal time not stated',date_not_stated:'date not stated',days_late_not_stated:'days late not stated',converted_from_weeks:'converted from weeks'};
+var UNCL={portion_not_stated:'portion not stated',intensity_not_stated:'intensity not stated',meal_type_not_stated:'meal time not stated',date_not_stated:'date not stated',days_late_not_stated:'days late not stated',converted_from_weeks:'converted from weeks',check_phrase:'please check this matches what you wrote',ambiguous_term:'please check this one'};
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
 var INTL={1:'mild',2:'moderate',3:'strong'};
 var SRCL={offline_rules:'understood offline',ai:'understood by AI',manual:'added by you',sample:'sample data',test:'test'};
@@ -187,8 +201,9 @@ function setUnc(e,k,on){
   if(on)e.uncertainties.push(k);
 }
 function openCard(res,text){
-  res.entries.forEach(function(e){e.source='offline_rules';e.intensity=null});
-  draft={entries:res.entries,skipped:res.skipped,lang:res.message_language,date:todayISO(),editing:-1};
+  var layer=res.source_layer==='ai'?'ai':'offline_rules';
+  res.entries.forEach(function(e){e.source=layer;e.intensity=null});
+  draft={entries:res.entries,skipped:res.skipped,lang:res.message_language,layer:layer,note:res.note||null,date:todayISO(),editing:-1};
   renderCard();
   document.getElementById('parseOut').scrollIntoView({block:'start'});
 }
@@ -231,8 +246,9 @@ function renderCard(){
   o.hidden=false;
   var c=el('div','card');
   c.appendChild(el('h2','','Here’s what I understood'));
-  c.appendChild(el('span','tag','Understood offline'));
+  c.appendChild(el('span','tag',draft.layer==='ai'?'Understood by AI':'Understood offline'));
   c.appendChild(el('span','tag','Looks like: '+LANGL[draft.lang]));
+  if(draft.note)c.appendChild(el('div','note',draft.note)).style.marginTop='6px';
   var dr=el('div','ent');dr.appendChild(el('div','lbl','When'));
   var di=el('input','in');di.type='date';di.value=draft.date;di.max=todayISO();di.setAttribute('aria-label','Date');
   di.onchange=function(){if(di.value)draft.date=di.value};
@@ -267,7 +283,7 @@ function saveAll(){
   var when=draft.date===todayISO()?new Date():new Date(draft.date+'T12:00:00'),n=0;
   try{
     draft.entries.forEach(function(e){
-      var r=DB.add({category:e.category,normalized_name:e.normalized_name,original_phrase:e.original_phrase,meal_type:e.meal_type,intensity:e.intensity,days_late:e.days_late,occurred_at:when.toISOString(),uncertainties:e.uncertainties,vocab_id:e.vocab_id,source:e.source});
+      var r=DB.add({category:e.category,normalized_name:e.normalized_name,original_phrase:e.original_phrase,meal_type:e.meal_type,intensity:e.intensity,days_late:e.days_late,occurred_at:when.toISOString(),uncertainties:e.uncertainties,vocab_id:e.vocab_id,confidence:e.confidence==null?null:e.confidence,source:e.source});
       if(r)n++;
     });
   }catch(err){toast('Couldn’t save one entry. Please check it.');renderData();return}
@@ -298,7 +314,13 @@ document.getElementById('send').onclick=function(){
   var v=msg.value.trim();
   if(!v){toast('Write a few words first');return}
   if(!window.Parser||!window.VOCAB){toast('Still loading. Try again in a moment.');return}
-  openCard(Parser.parse(v),v);
+  var c=AI.cfg();
+  if(!(c.on&&c.key)){openCard(Parser.parse(v));return}
+  if(!navigator.onLine){var r0=Parser.parse(v);r0.note='You are offline, so Dhara read this on your phone.';openCard(r0);return}
+  var sb=this;sb.disabled=true;sb.textContent='Reading…';
+  AI.interpret(v).then(function(r){openCard(r)}).catch(function(e){
+    var r1=Parser.parse(v);r1.note=AI.why(e)+', so Dhara read this on your phone.';openCard(r1);
+  }).then(function(){sb.disabled=false;sb.textContent='Send'});
 };
 Array.prototype.forEach.call(document.querySelectorAll('[data-soon]'),function(b){
   b.onclick=function(){toast(b.dataset.soon)};
@@ -430,6 +452,104 @@ function renderCycle(){
     box.appendChild(rc);
   }
 }
+var AI=(function(){
+  var K='dhara.ai',B='https://generativelanguage.googleapis.com/v1beta/',DEF='gemini-3.5-flash';
+  var CATS=['food','symptom','mood','anxiety','energy','sleep','cycle'],MEALS=['breakfast','lunch','snack','dinner'];
+  var CYC={'Period started':'period_started','Period ended':'period_ended','Period late':'period_late','Missed period':'missed_period','Irregular period':'irregular_period'};
+  var SYS='You help a health-diary app used by women in Nepal. Read ONE short diary message. It may be in Nepali (Devanagari), English, Romanized Nepali, or a mix. Extract only what the person clearly states. Rules: 1) Never diagnose, give advice, or add anything not in the message. 2) category is one of: food, symptom, mood, anxiety, energy, sleep, cycle. 3) normalized_name is a short English name (for example Momo, Tea, Cramps, Anxiety, Tired). For cycle use exactly one of: Period started, Period ended, Period late, Missed period, Irregular period. 4) original_phrase is the person’s own words, copied from the message. 5) meal_type only for food, and only if the message states or clearly implies the time (bihana = morning = breakfast, diuso = midday = lunch, beluka or raati = evening = dinner); otherwise none. 6) days_late is a whole number only if the message gives a number of days (convert weeks to days); otherwise 0. 7) Things the person says they did NOT have or do (for example no cramps, momo khaina) must not be entries; list them in skipped. 8) Never guess how strong a symptom is. 9) If a term is unclear, still include it and set ambiguous to true. 10) If the message has nothing about food, symptoms, mood, sleep, energy or the cycle, return empty entries. Common Nepali words: chiya = tea, khaye = ate, thakai = tired, chinta = worry or anxiety, pet dukhyo = stomach cramps, mahina or mahinawari = period.';
+  var SCHEMA={type:'object',properties:{
+    message_language:{type:'string',enum:['english','nepali','romanized_nepali','mixed']},
+    entries:{type:'array',items:{type:'object',properties:{
+      category:{type:'string',enum:CATS},normalized_name:{type:'string'},original_phrase:{type:'string'},
+      meal_type:{type:'string',enum:['breakfast','lunch','snack','dinner','none']},
+      days_late:{type:'integer'},ambiguous:{type:'boolean'},confidence:{type:'number'}},
+      required:['category','normalized_name','original_phrase','meal_type','days_late','ambiguous','confidence']}},
+    skipped:{type:'array',items:{type:'object',properties:{normalized_name:{type:'string'},original_phrase:{type:'string'}},required:['normalized_name','original_phrase']}}},
+    required:['message_language','entries','skipped']};
+  function cfg(){try{var x=JSON.parse(localStorage.getItem(K)||'{}');return{on:!!x.on,key:x.key||'',model:x.model||DEF}}catch(e){return{on:false,key:'',model:DEF}}}
+  function save(o){try{localStorage.setItem(K,JSON.stringify(o));return true}catch(e){toast('Couldn’t save settings');return false}}
+  function call(url,opts,ms){
+    var c=new AbortController(),t=setTimeout(function(){c.abort()},ms||15000);opts.signal=c.signal;
+    return fetch(url,opts).then(function(r){clearTimeout(t);return r},function(e){clearTimeout(t);throw e});
+  }
+  function bad(r){return r.json().catch(function(){return{}}).then(function(j){var e=new Error((j.error&&j.error.message)||('HTTP '+r.status));e.status=r.status;throw e})}
+  function validate(o,text){
+    if(!o||!Array.isArray(o.entries))throw new Error('bad shape');
+    var have={};Parser.norm(text).forEach(function(w){have[w]=1});var out=[];
+    o.entries.slice(0,12).forEach(function(e){
+      if(!e||CATS.indexOf(e.category)<0)return;
+      var name=String(e.normalized_name||'').trim().slice(0,60),phr=String(e.original_phrase||'').trim().slice(0,120);
+      if(!name)return;
+      var ent={category:e.category,normalized_name:name,vocab_id:null,original_phrase:phr||name,meal_type:null,days_late:null,intensity:null,
+        confidence:(typeof e.confidence==='number'&&e.confidence>=0&&e.confidence<=1)?e.confidence:null,uncertainties:[]};
+      if(e.category==='cycle'){
+        var vid=CYC[name];if(!vid)return;ent.vocab_id=vid;
+        if(vid==='period_late'){var n=parseInt(e.days_late,10);if(n>=1&&n<=120)ent.days_late=n;else ent.uncertainties.push('days_late_not_stated')}
+        else if(vid!=='irregular_period')ent.uncertainties.push('date_not_stated');
+      }else{
+        var f=Parser.find(name)||Parser.find(ent.original_phrase);
+        if(f&&f.category===e.category){ent.vocab_id=f.id;ent.normalized_name=f.name}
+        if(e.category==='food'){ent.uncertainties.push('portion_not_stated');ent.meal_type=MEALS.indexOf(e.meal_type)>=0?e.meal_type:null;if(!ent.meal_type)ent.uncertainties.push('meal_type_not_stated')}
+        else ent.uncertainties.push('intensity_not_stated');
+      }
+      var pt=Parser.norm(ent.original_phrase);
+      if(pt.length&&!pt.every(function(w){return have[w]}))ent.uncertainties.push('check_phrase');
+      if(e.ambiguous===true)ent.uncertainties.push('ambiguous_term');
+      out.push(ent);
+    });
+    var sk=(Array.isArray(o.skipped)?o.skipped:[]).slice(0,6).filter(function(x){return x&&x.normalized_name}).map(function(x){return{normalized_name:String(x.normalized_name).slice(0,60),original_phrase:String(x.original_phrase||x.normalized_name).slice(0,120)}});
+    var lang=['english','nepali','romanized_nepali','mixed'].indexOf(o.message_language)>=0?o.message_language:'mixed';
+    return{schema_version:'1.1',message_language:lang,source_layer:'ai',entries:out,skipped:sk,requires_confirmation:true};
+  }
+  function interpret(text){
+    var c=cfg();
+    var body={systemInstruction:{parts:[{text:SYS}]},contents:[{role:'user',parts:[{text:'Today is '+todayISO()+'. Message: '+text}]}],
+      generationConfig:{responseMimeType:'application/json',responseJsonSchema:SCHEMA,temperature:0}};
+    return call(B+'models/'+encodeURIComponent(c.model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.key},body:JSON.stringify(body)},15000)
+    .then(function(r){return r.ok?r.json():bad(r)})
+    .then(function(j){
+      var parts=(((j.candidates||[])[0]||{}).content||{}).parts||[];
+      var t=parts.map(function(p){return p.text||''}).join('').replace(/^\s*```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+      return validate(JSON.parse(t),text);
+    });
+  }
+  function why(e){
+    if(e&&e.name==='AbortError')return'The AI took too long';
+    var s=e&&e.status;
+    if(s===429)return'The AI free limit was reached';
+    if(s===400||s===401||s===403)return'The AI key was not accepted';
+    if(s===404)return'The AI model was not found (open Me and press Test connection)';
+    return'The AI was unavailable';
+  }
+  function test(){
+    var c=cfg();if(!c.key)return Promise.reject(new Error('Paste your key first'));
+    return call(B+'models?pageSize=200',{headers:{'x-goog-api-key':c.key}},15000)
+    .then(function(r){return r.ok?r.json():bad(r)})
+    .then(function(j){
+      var names=(j.models||[]).filter(function(m){return(m.supportedGenerationMethods||[]).indexOf('generateContent')>=0}).map(function(m){return m.name.replace(/^models\//,'')})
+        .filter(function(n){return/^gemini/.test(n)&&!/image|tts|live|audio|embed|robotics|computer|vision|banana|learnlm|customtools/.test(n)});
+      var pick=names.indexOf(c.model)>=0?c.model:(names.filter(function(n){return/flash/.test(n)&&!/lite|preview|exp/.test(n)}).sort().reverse()[0]||names.filter(function(n){return/flash/.test(n)}).sort().reverse()[0]||names[0]);
+      if(!pick)throw new Error('No usable Gemini model found for this key');
+      if(pick!==c.model){c.model=pick;save(c)}
+      return interpret('had momo for lunch').then(function(r){return{model:pick,res:r}});
+    });
+  }
+  return{cfg:cfg,save:save,interpret:interpret,why:why,test:test};
+})();
+(function(){
+  var c=AI.cfg(),on=document.getElementById('aiOn'),key=document.getElementById('aiKey'),mod=document.getElementById('aiModel'),st=document.getElementById('aiStatus');
+  on.checked=c.on;key.value=c.key;mod.value=c.model;
+  function persist(){var o={on:on.checked,key:key.value.trim(),model:mod.value.trim()||'gemini-3.5-flash'};if(o.on&&!o.key){on.checked=false;o.on=false;st.textContent='Paste a key first, then save.';return false}return AI.save(o)}
+  document.getElementById('aiSave').onclick=function(){if(persist()){st.textContent=on.checked?'Saved. AI is on when you are online. Use made-up messages only.':'Saved. AI is off.';toast('Settings saved')}};
+  document.getElementById('aiTest').onclick=function(){
+    if(!persist())return;st.textContent='Checking…';
+    AI.test().then(function(r){
+      mod.value=r.model;var e=r.res.entries[0];
+      st.textContent='Works. Model: '+r.model+'. Test sentence understood: '+(e?e.normalized_name+(e.meal_type?' ('+e.meal_type+')':''):'nothing')+'.';
+    }).catch(function(e){st.textContent='Didn’t work: '+String(e.message||e).slice(0,140)});
+  };
+  document.getElementById('aiRemove').onclick=function(){AI.save({on:false,key:'',model:mod.value.trim()||'gemini-3.5-flash'});on.checked=false;key.value='';st.textContent='Key removed from this phone.'};
+})();
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
   var data={schema_version:1,records:[]};
