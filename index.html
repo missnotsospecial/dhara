@@ -129,7 +129,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 7, version 7. Optional AI helper added.</div>
+  <div class="note">Build: Module 7, version 9. AI helper with speed readout.</div>
 </section>
 </main>
 
@@ -203,7 +203,7 @@ function setUnc(e,k,on){
 function openCard(res,text){
   var layer=res.source_layer==='ai'?'ai':'offline_rules';
   res.entries.forEach(function(e){e.source=layer;e.intensity=null});
-  draft={entries:res.entries,skipped:res.skipped,lang:res.message_language,layer:layer,note:res.note||null,date:todayISO(),editing:-1};
+  draft={entries:res.entries,skipped:res.skipped,lang:res.message_language,layer:layer,ms:res.ms||null,note:res.note||null,date:todayISO(),editing:-1};
   renderCard();
   document.getElementById('parseOut').scrollIntoView({block:'start'});
 }
@@ -246,7 +246,7 @@ function renderCard(){
   o.hidden=false;
   var c=el('div','card');
   c.appendChild(el('h2','','Here’s what I understood'));
-  c.appendChild(el('span','tag',draft.layer==='ai'?'Understood by AI':'Understood offline'));
+  c.appendChild(el('span','tag',draft.layer==='ai'?'Understood by AI'+(draft.ms?' · '+(draft.ms/1000).toFixed(1)+' s':''):'Understood offline'));
   c.appendChild(el('span','tag','Looks like: '+LANGL[draft.lang]));
   if(draft.note)c.appendChild(el('div','note',draft.note)).style.marginTop='6px';
   var dr=el('div','ent');dr.appendChild(el('div','lbl','When'));
@@ -319,7 +319,7 @@ document.getElementById('send').onclick=function(){
   if(!navigator.onLine){var r0=Parser.parse(v);r0.note='You are offline, so Dhara read this on your phone.';openCard(r0);return}
   var sb=this;sb.disabled=true;sb.textContent='Reading…';
   AI.interpret(v).then(function(r){openCard(r)}).catch(function(e){
-    var r1=Parser.parse(v);r1.note=AI.why(e)+', so Dhara read this on your phone.';openCard(r1);
+    var r1=Parser.parse(v);r1.note=AI.why(e)+(e&&e.status?' (error '+e.status+')':'')+', so Dhara read this on your phone.';openCard(r1);
   }).then(function(){sb.disabled=false;sb.textContent='Send'});
 };
 Array.prototype.forEach.call(document.querySelectorAll('[data-soon]'),function(b){
@@ -502,19 +502,24 @@ var AI=(function(){
     return{schema_version:'1.1',message_language:lang,source_layer:'ai',entries:out,skipped:sk,requires_confirmation:true};
   }
   function interpret(text){
-    var c=cfg();
-    var body={systemInstruction:{parts:[{text:SYS}]},contents:[{role:'user',parts:[{text:'Today is '+todayISO()+'. Message: '+text}]}],
-      generationConfig:{responseMimeType:'application/json',responseJsonSchema:SCHEMA,temperature:0}};
-    return call(B+'models/'+encodeURIComponent(c.model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.key},body:JSON.stringify(body)},15000)
+    var c=cfg(),t0=Date.now();
+    var th=/gemini-3/.test(c.model)?{thinkingLevel:'minimal'}:(/gemini-2\.5-flash/.test(c.model)?{thinkingBudget:0}:null);
+    function go(useTh){
+      var g={responseMimeType:'application/json',responseJsonSchema:SCHEMA};
+      if(useTh&&th)g.thinkingConfig=th;
+      var body={systemInstruction:{parts:[{text:SYS}]},contents:[{role:'user',parts:[{text:'Today is '+todayISO()+'. Message: '+text}]}],generationConfig:g};
+      return call(B+'models/'+encodeURIComponent(c.model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':c.key},body:JSON.stringify(body)},25000);
+    }
+    return go(true).then(function(r){return(r.status===400&&th)?go(false):r})
     .then(function(r){return r.ok?r.json():bad(r)})
     .then(function(j){
       var parts=(((j.candidates||[])[0]||{}).content||{}).parts||[];
       var t=parts.map(function(p){return p.text||''}).join('').replace(/^\s*```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
-      return validate(JSON.parse(t),text);
+      var res=validate(JSON.parse(t),text);res.ms=Date.now()-t0;return res;
     });
   }
   function why(e){
-    if(e&&e.name==='AbortError')return'The AI took too long';
+    if(e&&e.name==='AbortError')return'The AI took longer than 25 seconds';
     var s=e&&e.status;
     if(s===429)return'The AI free limit was reached';
     if(s===400||s===401||s===403)return'The AI key was not accepted';
@@ -531,7 +536,8 @@ var AI=(function(){
       var pick=names.indexOf(c.model)>=0?c.model:(names.filter(function(n){return/flash/.test(n)&&!/lite|preview|exp/.test(n)}).sort().reverse()[0]||names.filter(function(n){return/flash/.test(n)}).sort().reverse()[0]||names[0]);
       if(!pick)throw new Error('No usable Gemini model found for this key');
       if(pick!==c.model){c.model=pick;save(c)}
-      return interpret('had momo for lunch').then(function(r){return{model:pick,res:r}});
+      var shown=names.slice().sort().reverse().slice(0,8);
+      return interpret('had momo for lunch, feeling anxious, period is 5 days late').then(function(r){return{model:pick,res:r,names:shown}},function(e){e.names=shown;e.model=pick;throw e});
     });
   }
   return{cfg:cfg,save:save,interpret:interpret,why:why,test:test};
@@ -544,9 +550,11 @@ var AI=(function(){
   document.getElementById('aiTest').onclick=function(){
     if(!persist())return;st.textContent='Checking…';
     AI.test().then(function(r){
-      mod.value=r.model;var e=r.res.entries[0];
-      st.textContent='Works. Model: '+r.model+'. Test sentence understood: '+(e?e.normalized_name+(e.meal_type?' ('+e.meal_type+')':''):'nothing')+'.';
-    }).catch(function(e){st.textContent='Didn’t work: '+String(e.message||e).slice(0,140)});
+      mod.value=r.model;
+      st.textContent='Works. Model: '+r.model+'. Understood '+r.res.entries.length+' entries from the example sentence in '+(r.res.ms/1000).toFixed(1)+' s. Models on your key: '+r.names.join(', ')+'.';
+    }).catch(function(e){
+      st.textContent='Didn’t work: '+AI.why(e)+(e.status?' (error '+e.status+')':'')+(e.name!=='AbortError'&&e.message?' – '+String(e.message).slice(0,100):'')+(e.names?'. Models on your key: '+e.names.join(', ')+'. You can type another name in the Model box and test again.':'');
+    });
   };
   document.getElementById('aiRemove').onclick=function(){AI.save({on:false,key:'',model:mod.value.trim()||'gemini-3.5-flash'});on.checked=false;key.value='';st.textContent='Key removed from this phone.'};
 })();
