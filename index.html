@@ -167,7 +167,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 9, version 12. Doctor summary and safety.</div>
+  <div class="note">Build: Module 9, version 13. Safety notes check your own words.</div>
 </section>
 </main>
 
@@ -241,7 +241,8 @@ function setUnc(e,k,on){
 function openCard(res,text){
   var layer=res.source_layer==='ai'?'ai':'offline_rules';
   res.entries.forEach(function(e){e.source=layer;e.intensity=null});
-  draft={entries:res.entries,skipped:res.skipped,lang:res.message_language,layer:layer,ms:res.ms||null,note:res.note||null,date:todayISO(),editing:-1};
+  var flags=safetyFlags(lastText,res.entries);
+  draft={flags:flags,entries:res.entries,skipped:res.skipped,lang:res.message_language,layer:layer,ms:res.ms||null,note:res.note||null,date:todayISO(),editing:-1};
   renderCard();
   document.getElementById('parseOut').scrollIntoView({block:'start'});
 }
@@ -287,6 +288,7 @@ function renderCard(){
   c.appendChild(el('span','tag',draft.layer==='ai'?'Understood by AI'+(draft.ms?' · '+(draft.ms/1000).toFixed(1)+' s':''):'Understood offline'));
   c.appendChild(el('span','tag','Looks like: '+LANGL[draft.lang]));
   if(draft.note)c.appendChild(el('div','note',draft.note)).style.marginTop='6px';
+  Object.keys(draft.flags||{}).forEach(function(k){if(SAFE[k])c.appendChild(el('div','note',SAFE[k])).style.marginTop='8px'});
   var dr=el('div','ent');dr.appendChild(el('div','lbl','When'));
   var di=el('input','in');di.type='date';di.value=draft.date;di.max=todayISO();di.setAttribute('aria-label','Date');
   di.onchange=function(){if(di.value)draft.date=di.value};
@@ -308,8 +310,6 @@ function renderCard(){
     var d=el('div','ent');d.appendChild(el('b','','Not logged: '+e.normalized_name));
     d.appendChild(el('div','muted','You wrote “'+e.original_phrase+'” with a “no” or “not”.'));c.appendChild(d);
   });
-  var shown={};
-  draft.entries.forEach(function(e){var n=SAFE[e.vocab_id];if(n&&!shown[e.vocab_id]){shown[e.vocab_id]=1;c.appendChild(el('div','note',n)).style.marginTop='8px'}});
   c.appendChild(addBox());
   c.appendChild(el('p','muted','Nothing is saved until you tap Save.')).style.margin='10px 0 0';
   var sv=btn('Save all','btn',saveAll);sv.style.cssText='width:100%;margin:10px 0 0';c.appendChild(sv);
@@ -355,6 +355,7 @@ document.getElementById('send').onclick=function(){
   if(!v){toast('Write a few words first');return}
   if(!window.Parser||!window.VOCAB){toast('Still loading. Try again in a moment.');return}
   if(needsCare(v)){showCare();return}
+  lastText=v;
   var c=AI.cfg();
   if(!(c.on&&c.key)){openCard(Parser.parse(v));return}
   if(!navigator.onLine){var r0=Parser.parse(v);r0.note='You are offline, so Dhara read this on your phone.';openCard(r0);return}
@@ -980,6 +981,23 @@ function showCare(){
 var SAFE={heavy_flow:'Very heavy bleeding, or bleeding with dizziness or severe pain, needs medical care. Dhara can’t assess this. If it is happening now, please contact a doctor or go to a health facility.',
   low_mood:'If low mood is lasting or feels heavy, talking to someone you trust or to a doctor can help. Helplines are in Me, under Safety and help.',
   missed_period:'A late or missed period has many possible causes, including pregnancy. A doctor can help find out.'};
+var lastText='';
+var RX={
+  heavy_flow:/heavy (bleeding|flow|period)|bleeding (heavily|a lot)|soak(ed|ing) (a |through )?(pad|tampon)|flooding|clots?\b|dherai (ragat|bleeding|flow)|ragat dherai|flow dherai|धेरै रगत|रगत धेरै/i,
+  low_mood:/hopeless|depress|\bsad\b|low mood|feeling low|udas|man dukhi|उदास/i,
+  missed_period:/missed (my )?period|period (is |was )?(late|missed|delayed)|late period|mahina (aayena|ayena|bhayena|dhilo)|महिनावारी (भएन|ढिलो)|महिना (आएन|भएन)/i
+};
+function safetyFlags(text,entries){
+  var f={};
+  try{Parser.parse(text).entries.forEach(function(e){if(SAFE[e.vocab_id])f[e.vocab_id]=1})}catch(x){}
+  (entries||[]).forEach(function(e){
+    if(SAFE[e.vocab_id])f[e.vocab_id]=1;
+    var n=String(e.normalized_name||'')+' '+String(e.original_phrase||'');
+    Object.keys(RX).forEach(function(k){if(RX[k].test(n))f[k]=1});
+  });
+  Object.keys(RX).forEach(function(k){if(RX[k].test(text||''))f[k]=1});
+  return f;
+}
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
   var data={schema_version:1,records:[]};
