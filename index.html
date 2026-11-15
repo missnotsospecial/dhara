@@ -55,6 +55,23 @@ nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;st
 .link{border:0;background:none;font:inherit;color:var(--teal);padding:10px 4px;min-height:44px}
 .chk{display:flex;align-items:center;gap:10px;margin:12px 0}
 .chk input{width:24px;height:24px;flex:none}
+#paper{background:#fff;color:#000;border:1px solid var(--line);border-radius:12px;padding:16px;font-size:14px;line-height:1.45}
+#paper h2{font-size:20px;margin:0 0 4px}
+#paper h3{font-size:15px;margin:16px 0 6px}
+.rtag{display:inline-block;border:1px solid #333;border-radius:4px;padding:1px 6px;font-size:11px;margin-left:8px;font-weight:400;vertical-align:middle}
+.rt{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0}
+.rt th,.rt td{border:1px solid #aaa;padding:4px 6px;text-align:left;vertical-align:top}
+.rt th{background:#eee}
+.warnbox{border:2px solid #000;padding:8px 10px;margin:8px 0;font-weight:600}
+.tel{display:block;padding:10px 0;color:var(--teal);font-weight:600;text-decoration:none;min-height:44px}
+@media print{
+  html,body{height:auto;background:#fff}
+  #app{display:block;height:auto;max-width:none;overflow:visible;background:#fff}
+  header,nav,#toast,.noprint{display:none!important}
+  main{overflow:visible;padding:0}
+  #paper{border:0;padding:0;font-size:12pt}
+  .pcard{page-break-inside:avoid}
+}
 button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--deep);color:#fff;font-size:14px;padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86%;text-align:center}
 #toast.on{opacity:1}
@@ -97,13 +114,33 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
 
 <section id="patterns" hidden><div id="patBox"></div></section>
 
-<section id="report" hidden>
-  <div class="card empty"><svg viewBox="0 0 72 32" aria-hidden="true"><rect x="24" y="2" width="24" height="28" rx="4" fill="#E3F0EC" stroke="#1F7A6D" stroke-width="2"/></svg><h2>Your doctor summary</h2><p class="muted">Once you have records, pick a date range and save a summary to take to your appointment.</p><button class="btn alt" data-soon="Doctor summary arrives in Module 9">Preview summary</button></div>
-</section>
+<section id="report" hidden><div id="repBox"></div></section>
 
 <section id="me" hidden>
   <div class="card" id="installCard" hidden><h2>Add Dhara to your home screen</h2><p class="muted">Open it like any app, even without internet.</p><button class="btn alt" id="install">Install</button></div>
   <div class="card"><h2>About Dhara</h2><p class="muted">Dhara helps you track and prepare. It does not diagnose or replace a doctor.</p></div>
+  <div class="card" id="safetyCard"><h2>Safety and help</h2>
+    <p class="muted">Dhara helps you track and prepare. It can’t tell you what is wrong.</p>
+    <details style="margin-top:8px"><summary>When to get medical care</summary>
+      <p class="muted" style="margin-top:8px">Please see a doctor soon, or go to a health facility, if you have:</p>
+      <ul class="muted" style="margin:6px 0 6px 20px">
+        <li>Very heavy bleeding (soaking a pad or tampon every hour for two hours or more), or bleeding with dizziness or fainting.</li>
+        <li>Severe pain in your lower belly, or pain with a fever.</li>
+        <li>A missed period with pain or bleeding, if you could be pregnant.</li>
+        <li>No period for 90 days or more.</li>
+      </ul>
+      <p class="muted">For chest pain or trouble breathing, call an ambulance (102) or go to the nearest hospital right away.</p>
+    </details>
+    <details style="margin-top:8px"><summary>Feeling very low or unsafe</summary>
+      <p class="muted" style="margin-top:8px">You don’t have to face this alone. If you might act on thoughts of harming yourself, or you are in danger, call the police (100) or an ambulance (102), or go to the nearest hospital.</p>
+      <a class="tel" href="tel:1166">1166 · National suicide prevention helpline</a>
+      <a class="tel" href="tel:9813476123">9813476123 · Patan Hospital crisis helpline</a>
+      <a class="tel" href="tel:9840021600">9840021600 · TUTH suicide hotline</a>
+      <a class="tel" href="tel:16600102005">1660 010 2005 · TPO Nepal (toll free)</a>
+      <p class="muted" style="font-size:12px">Numbers last checked on 14 Nov 2026 from news and UN pages. Hours and numbers can change, so please check locally. Dhara is not a crisis service.</p>
+    </details>
+    <p class="muted" style="font-size:12px;margin-top:8px">Draft safety text. A doctor should review it before real use.</p>
+  </div>
   <div class="card"><h2>Your data</h2>
     <p class="muted" id="dataInfo"></p>
     <button class="btn alt" id="exportBtn">Export all data</button>
@@ -130,7 +167,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 8, version 11. Patterns and labelled sample data.</div>
+  <div class="note">Build: Module 9, version 12. Doctor summary and safety.</div>
 </section>
 </main>
 
@@ -271,6 +308,8 @@ function renderCard(){
     var d=el('div','ent');d.appendChild(el('b','','Not logged: '+e.normalized_name));
     d.appendChild(el('div','muted','You wrote “'+e.original_phrase+'” with a “no” or “not”.'));c.appendChild(d);
   });
+  var shown={};
+  draft.entries.forEach(function(e){var n=SAFE[e.vocab_id];if(n&&!shown[e.vocab_id]){shown[e.vocab_id]=1;c.appendChild(el('div','note',n)).style.marginTop='8px'}});
   c.appendChild(addBox());
   c.appendChild(el('p','muted','Nothing is saved until you tap Save.')).style.margin='10px 0 0';
   var sv=btn('Save all','btn',saveAll);sv.style.cssText='width:100%;margin:10px 0 0';c.appendChild(sv);
@@ -315,6 +354,7 @@ document.getElementById('send').onclick=function(){
   var v=msg.value.trim();
   if(!v){toast('Write a few words first');return}
   if(!window.Parser||!window.VOCAB){toast('Still loading. Try again in a moment.');return}
+  if(needsCare(v)){showCare();return}
   var c=AI.cfg();
   if(!(c.on&&c.key)){openCard(Parser.parse(v));return}
   if(!navigator.onLine){var r0=Parser.parse(v);r0.note='You are offline, so Dhara read this on your phone.';openCard(r0);return}
@@ -644,9 +684,9 @@ function lfa(n){while(LF.length<=n)LF.push(LF[LF.length-1]+Math.log(LF.length));
 function lch(n,k){return lfa(n)-lfa(k)-lfa(n-k)}
 function fisher(a,b,c,d){var n1=a+b,K=a+c,N=a+b+c+d,p=0,hi=Math.min(n1,K);for(var x=a;x<=hi;x++)p+=Math.exp(lch(K,x)+lch(N-K,n1-x)-lch(N,n1));return p}
 function uniq(a){var o={};return a.filter(function(x){if(o[x])return false;o[x]=1;return true})}
-function computePatterns(){
-  var tn=dnum(todayISO()),lo=patRange?tn-patRange+1:-1e9;
-  var recs=DB.all().filter(function(r){return r.occurred_at&&r.category!=='note'&&dnum(dayKey(new Date(r.occurred_at)))>=lo});
+function computePatterns(o){
+  var tn=dnum(todayISO()),lo=o?o.lo:(patRange?tn-patRange+1:-1e9),hi=o?o.hi:1e9;
+  var recs=DB.all().filter(function(r){if(!r.occurred_at||r.category==='note')return false;var dn=dnum(dayKey(new Date(r.occurred_at)));return dn>=lo&&dn<=hi});
   var CAT={food:1,symptom:1,mood:1,anxiety:1,energy:1,sleep:1},logged={},items={},starts=[],ends=[],ins=[],needs=[];
   recs.forEach(function(r){
     var dy=dayKey(new Date(r.occurred_at));
@@ -786,6 +826,160 @@ function renderPatterns(){
   if(hidden){box.appendChild(btn('Show '+hidden+' hidden '+(hidden===1?'pattern':'patterns'),'link',function(){insSave({});renderPatterns()}))}
   box.appendChild(el('p','muted','These observations describe your own records. They don’t show that one thing causes another, and they are not a diagnosis.')).style.fontSize='13px';
 }
+var repFrom=null,repTo=null,repNotes=(function(){try{return JSON.parse(localStorage.getItem('dhara.report')||'{}')}catch(e){return{}}})();
+function saveNotes(){try{localStorage.setItem('dhara.report',JSON.stringify(repNotes))}catch(e){}}
+function tableEl(head,rows){
+  var t=el('table','rt'),h=el('tr');head.forEach(function(x){h.appendChild(el('th','',x))});t.appendChild(h);
+  rows.forEach(function(r){var tr=el('tr');r.forEach(function(c){tr.appendChild(el('td','',String(c)))});t.appendChild(tr)});return t;
+}
+function sec(title,tag){var d=el('div','pcard'),h=el('h3','',title);if(tag)h.appendChild(el('span','rtag',tag));d.appendChild(h);return d}
+function groupItems(recs,cats){
+  var m={};
+  recs.forEach(function(r){
+    if(cats.indexOf(r.category)<0)return;
+    var k=itemKey(r),g=m[k]||(m[k]={name:r.normalized_name,days:{},i:{0:0,1:0,2:0,3:0}});
+    g.days[dayKey(new Date(r.occurred_at))]=1;g.i[r.intensity||0]++;
+  });
+  return Object.keys(m).map(function(k){var g=m[k],ds=Object.keys(g.days).sort();return{name:g.name,n:ds.length,first:ds[0],last:ds[ds.length-1],i:g.i}}).sort(function(a,b){return b.n-a.n});
+}
+function strength(i){var p=[];if(i[1])p.push('mild '+i[1]);if(i[2])p.push('moderate '+i[2]);if(i[3])p.push('strong '+i[3]);if(i[0])p.push('not recorded '+i[0]);return p.join(', ')}
+function span(a,b){return fmtD(a)+(a!==b?' to '+fmtD(b):'')}
+function buildPaper(from,to){
+  var fn=dnum(from),tnum=dnum(to);
+  var recs=DB.all().filter(function(r){
+    if(!r.occurred_at||(r.category==='note'&&r.vocab_id!=='fasting'))return false;
+    var d=dnum(dayKey(new Date(r.occurred_at)));return d>=fn&&d<=tnum;
+  });
+  var paper=el('div');paper.id='paper';
+  paper.appendChild(el('h2','','Dhara summary'));
+  paper.appendChild(el('div','','For discussion with a healthcare professional'));
+  paper.appendChild(el('div','','Reporting period: '+fmtD(from,1)+' to '+fmtD(to,1)));
+  paper.appendChild(el('div','','Generated: '+fmtD(todayISO(),1)+' · Only entries confirmed by the user are included.'));
+  var sampleN=recs.filter(function(r){return r.source==='sample'}).length;
+  if(sampleN)paper.appendChild(el('div','warnbox','THIS SUMMARY CONTAINS SAMPLE DATA. Sample entries are made up and do not describe a real person.'));
+  if(!recs.length){paper.appendChild(el('p','','No entries were recorded in this period.'));}
+  // cycle
+  var starts=[],ends=[],reps=[];
+  recs.forEach(function(r){
+    var dy=dayKey(new Date(r.occurred_at));
+    if(r.vocab_id==='period_started')starts.push(dy);else if(r.vocab_id==='period_ended')ends.push(dy);
+    else if(r.category==='cycle')reps.push({d:dy,r:r});
+  });
+  starts=uniq(starts.sort());ends.sort();
+  var c1=sec('Menstrual history','Calculated from period dates');
+  if(!starts.length)c1.appendChild(el('p','','No period dates were recorded in this period.'));
+  else{
+    var rows=[],lens=[];
+    starts.forEach(function(st,j){
+      var a=dnum(st),nx=starts[j+1]?dnum(starts[j+1]):null,e=ends.filter(function(x){var d=dnum(x);return d>=a&&(nx==null||d<nx)})[0],len=nx==null?null:nx-a;
+      if(len!=null)lens.push(len);
+      rows.push([fmtD(st,1),e?fmtD(e,1):'not recorded',len!=null?len+' days':'current or last recorded',e?(dnum(e)-a+1)+' days':'not recorded',len!=null&&(len<21||len>35)?'outside typical 21 to 35 days':'']);
+    });
+    c1.appendChild(tableEl(['Period start','Period end','Cycle length','Period length','Note'],rows));
+    var sm=lens.length?'Completed cycles: '+lens.length+'. Length '+Math.min.apply(null,lens)+' to '+Math.max.apply(null,lens)+' days, average '+Math.round(lens.reduce(function(a,b){return a+b},0)/lens.length)+' days.':'Only one period start was recorded, so no cycle length can be calculated.';
+    c1.appendChild(el('p','',sm));
+    c1.appendChild(el('p','','Typical cycles are about 21 to 35 days. This is general information, not an assessment.')).style.fontSize='12px';
+  }
+  paper.appendChild(c1);
+  if(reps.length){
+    var c2=sec('Cycle events the user reported','Recorded by user');
+    c2.appendChild(tableEl(['Date','What was reported'],reps.sort(function(a,b){return a.d<b.d?-1:1}).map(function(x){return[fmtD(x.d,1),label(x.r)]})));
+    paper.appendChild(c2);
+  }
+  function itemSec(title,cats,empty){
+    var g=groupItems(recs,cats),d=sec(title,'Recorded by user');
+    if(!g.length)d.appendChild(el('p','',empty));
+    else d.appendChild(tableEl(['Item','Days recorded','Strength recorded','Dates'],g.map(function(x){return[x.name,x.n,strength(x.i),span(x.first,x.last)]})));
+    paper.appendChild(d);
+  }
+  itemSec('Symptoms',['symptom'],'No symptoms were recorded in this period.');
+  itemSec('Mood, anxiety and energy',['mood','anxiety','energy'],'No mood, anxiety or energy entries were recorded.');
+  itemSec('Sleep',['sleep'],'No sleep entries were recorded.');
+  var fg=groupItems(recs,['food']).slice(0,12),fd=sec('Food and lifestyle log','Recorded by user');
+  if(!fg.length)fd.appendChild(el('p','','No food entries were recorded.'));
+  else{
+    fd.appendChild(tableEl(['Food or drink','Days recorded'],fg.map(function(x){return[x.name,x.n]})));
+    fd.appendChild(el('p','','Most often recorded items are shown. Portions and nutrition values were not recorded.')).style.fontSize='12px';
+  }
+  var fast=groupItems(recs,['note']).filter(function(x){return x.name==='Fasting'})[0];
+  if(fast)fd.appendChild(el('p','','Fasting days recorded: '+fast.n+'.'));
+  paper.appendChild(fd);
+  // observations
+  var P=computePatterns({lo:fn,hi:tnum}),st=insState(),obs=P.ins.filter(function(x){return!st[x.id]});
+  var ob=sec('Observed patterns','Descriptive only, not a diagnosis');
+  if(!obs.length)ob.appendChild(el('p','','No patterns met Dhara’s minimum-data rules for this period. This is a normal result, especially with fewer than 3 cycles.'));
+  obs.forEach(function(x){var d=el('div');d.style.margin='6px 0';d.appendChild(el('div','',x.text));d.appendChild(el('div','','Based on '+x.n+' · '+x.period)).style.fontSize='12px';ob.appendChild(d)});
+  paper.appendChild(ob);
+  // gaps
+  var logged={};recs.forEach(function(r){logged[dayKey(new Date(r.occurred_at))]=1});
+  var total=tnum-fn+1,cnt=0,run=0,best=0,bestEnd=null;
+  for(var d=fn;d<=tnum;d++){if(logged[dkey(d)]){cnt++;run=0}else{run++;if(run>best){best=run;bestEnd=d}}}
+  var gp=sec('Tracking coverage','Calculated');
+  gp.appendChild(el('p','','Days with at least one entry: '+cnt+' of '+total+'.'+(best?' Longest stretch with no entries: '+best+' days, ending '+fmtD(dkey(bestEnd))+'.':'')));
+  gp.appendChild(el('p','','Days without entries are unknown, not “no symptoms”.')).style.fontSize='12px';
+  paper.appendChild(gp);
+  // user notes
+  if((repNotes.meds||'').trim()||(repNotes.questions||'').trim()){
+    var un=sec('Written by the user','Not checked by Dhara');
+    if((repNotes.meds||'').trim()){un.appendChild(el('b','','Medicines or supplements taken'));un.appendChild(el('p','',repNotes.meds)).style.whiteSpace='pre-wrap'}
+    if((repNotes.questions||'').trim()){un.appendChild(el('b','','Questions or notes for the doctor'));un.appendChild(el('p','',repNotes.questions)).style.whiteSpace='pre-wrap'}
+    paper.appendChild(un);
+  }
+  // provenance
+  var SL={manual:'typed or added by the user',ai:'understood by AI, then confirmed by the user',offline_rules:'understood on the phone, then confirmed by the user',sample:'sample data'},cn={};
+  recs.forEach(function(r){cn[r.source]=(cn[r.source]||0)+1});
+  var pv=sec('How entries were recorded');
+  pv.appendChild(el('p','',Object.keys(cn).map(function(k){return cn[k]+' entries '+(SL[k]||k)}).join('; ')+'.'));
+  paper.appendChild(pv);
+  var ft=el('p','','Prepared by Dhara from entries confirmed by the user. This is not a diagnosis, medical record or medical advice. Estimates and observations describe recorded data only and may be wrong or incomplete. Please discuss with a doctor or other qualified health professional.');
+  ft.style.cssText='border-top:1px solid #000;margin-top:14px;padding-top:8px;font-size:12px';paper.appendChild(ft);
+  return paper;
+}
+function renderReport(){
+  var box=document.getElementById('repBox');if(!box)return;box.innerHTML='';
+  var recs=DB.all().filter(function(r){return r.occurred_at&&!(r.category==='note'&&r.vocab_id!=='fasting')});
+  if(!recs.length){
+    var ec=el('div','card empty');ec.appendChild(el('h2','','Your doctor summary'));
+    ec.appendChild(el('p','muted','Once you have entries, pick a date range and save a summary to take to your appointment. To see how it looks first, load sample data in Patterns.'));box.appendChild(ec);return;
+  }
+  var tdy=todayISO(),tn=dnum(tdy),days=recs.map(function(r){return dayKey(new Date(r.occurred_at))}).sort(),earliest=days[0];
+  var from=repFrom||earliest,to=repTo||tdy;
+  var cc=el('div','card noprint');cc.appendChild(el('h2','','Doctor summary'));
+  cc.appendChild(el('p','muted','Choose the dates, add anything you want to tell your doctor, then save the summary as a PDF. Nothing is sent anywhere.'));
+  var row=el('div','row');row.style.margin='8px 0';
+  [['Last 30 days',function(){repFrom=dkey(tn-29);repTo=null}],['Last 90 days',function(){repFrom=dkey(tn-89);repTo=null}],['All entries',function(){repFrom=null;repTo=null}]].forEach(function(o){row.appendChild(btn(o[0],'chip',function(){o[1]();renderReport()}))});
+  cc.appendChild(row);
+  var fi=el('input','in');fi.type='date';fi.value=from;fi.max=tdy;fi.setAttribute('aria-label','From date');fi.onchange=function(){repFrom=fi.value||null;renderReport()};
+  var ti=el('input','in');ti.type='date';ti.value=to;ti.max=tdy;ti.setAttribute('aria-label','To date');ti.onchange=function(){repTo=ti.value||null;renderReport()};
+  cc.appendChild(el('div','lbl','From'));cc.appendChild(fi);cc.appendChild(el('div','lbl','To'));cc.appendChild(ti);
+  var host=el('div');
+  function draw(){host.innerHTML='';if(dnum(from)>dnum(to)){host.appendChild(el('div','note','The start date is after the end date. Please change one of them.'));return}host.appendChild(buildPaper(from,to))}
+  [['meds','Medicines or supplements I take (optional)'],['questions','Questions or notes for my doctor (optional)']].forEach(function(f){
+    cc.appendChild(el('div','lbl',f[1]));var ta=el('textarea','in');ta.style.minHeight='64px';ta.value=repNotes[f[0]]||'';ta.setAttribute('aria-label',f[1]);
+    ta.oninput=function(){repNotes[f[0]]=ta.value;saveNotes();draw()};cc.appendChild(ta);
+  });
+  cc.appendChild(btn('Save as PDF / Print','btn alt',function(){try{window.print()}catch(e){toast('Printing isn’t available here')}}));
+  cc.appendChild(el('p','muted','In the print screen, choose “Save as PDF” as the printer.')).style.fontSize='12px';
+  box.appendChild(cc);
+  var pv=el('div','muted','Preview');pv.className='muted noprint';pv.style.margin='4px 0 6px';box.appendChild(pv);
+  box.appendChild(host);draw();
+}
+var CARE=['kill myself','end my life','want to die','wanna die','hurt myself','harm myself','self harm','no reason to live','better off dead','marna man','marna chahanchu','atmahatya','jiuna man chaina','bachna man chaina','आत्महत्या','मर्न मन','मर्न चाहन्छु','बाँच्न मन छैन','बाच्न मन छैन'].map(function(x){return' '+Parser.norm(x).join(' ')+' '});
+function needsCare(t){var m=' '+Parser.norm(t).join(' ')+' ';if(/suicid/i.test(t))return true;return CARE.some(function(p){return m.indexOf(p)>=0})}
+function showCare(){
+  closeCard();var o=document.getElementById('parseOut');o.hidden=false;o.innerHTML='';
+  var c=el('div','card');c.appendChild(el('h2','','I’m glad you told me'));
+  c.appendChild(el('p','','I’m really sorry you’re hurting. You deserve support right now, and you don’t have to face this alone.'));
+  c.appendChild(el('p','','If you might act on these thoughts, or you are in danger, please call the police (100) or an ambulance (102), or go to the nearest hospital. If you can, tell someone you trust where you are.'));
+  [['1166','National suicide prevention helpline'],['9813476123','Patan Hospital crisis helpline'],['9840021600','TUTH suicide hotline'],['16600102005','TPO Nepal (toll free)']].forEach(function(n){
+    var a=el('a','tel',n[0]+' · '+n[1]);a.href='tel:'+n[0];c.appendChild(a);
+  });
+  c.appendChild(el('p','muted','Nothing from this message was saved or sent anywhere. Numbers last checked on 14 Nov 2026; please check locally. Dhara is not a crisis service.')).style.fontSize='12px';
+  c.appendChild(btn('Close','chip',function(){closeCard()}));o.appendChild(c);
+}
+var SAFE={heavy_flow:'Very heavy bleeding, or bleeding with dizziness or severe pain, needs medical care. Dhara can’t assess this. If it is happening now, please contact a doctor or go to a health facility.',
+  low_mood:'If low mood is lasting or feels heavy, talking to someone you trust or to a doctor can help. Helplines are in Me, under Safety and help.',
+  missed_period:'A late or missed period has many possible causes, including pregnancy. A doctor can help find out.'};
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
   var data={schema_version:1,records:[]};
@@ -819,7 +1013,7 @@ var DB=(function(){
 var testBtn=document.getElementById('testBtn'),exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
 function fmt(iso){try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function renderData(){
-  renderToday();renderCycle();renderPatterns();
+  renderToday();renderCycle();renderPatterns();renderReport();
   var all=DB.all();
   document.getElementById('dataInfo').textContent=all.length+(all.length===1?' record':' records')+' saved on this phone. Nothing leaves your device.';
   var l=document.getElementById('recList');l.innerHTML='';
