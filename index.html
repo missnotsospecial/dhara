@@ -175,7 +175,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 10, version 14. Language test runner.</div>
+  <div class="note">Build: Module 10, version 15. AI reading fixes, paced test.</div>
 </section>
 </main>
 
@@ -506,7 +506,7 @@ var AI=(function(){
   var K='dhara.ai',B='https://generativelanguage.googleapis.com/v1beta/',DEF='gemini-3.5-flash';
   var CATS=['food','symptom','mood','anxiety','energy','sleep','cycle'],MEALS=['breakfast','lunch','snack','dinner'];
   var CYC={'Period started':'period_started','Period ended':'period_ended','Period late':'period_late','Missed period':'missed_period','Irregular period':'irregular_period'};
-  var SYS='You help a health-diary app used by women in Nepal. Read ONE short diary message. It may be in Nepali (Devanagari), English, Romanized Nepali, or a mix. Extract only what the person clearly states. Rules: 1) Never diagnose, give advice, or add anything not in the message. 2) category is one of: food, symptom, mood, anxiety, energy, sleep, cycle. 3) normalized_name is a short English name (for example Momo, Tea, Cramps, Anxiety, Tired). For cycle use exactly one of: Period started, Period ended, Period late, Missed period, Irregular period. 4) original_phrase is the person’s own words, copied from the message. 5) meal_type only for food, and only if the message states or clearly implies the time (bihana = morning = breakfast, diuso = midday = lunch, beluka or raati = evening = dinner); otherwise none. 6) days_late is a whole number only if the message gives a number of days (convert weeks to days); otherwise 0. 7) Things the person says they did NOT have or do (for example no cramps, momo khaina) must not be entries; list them in skipped. 8) Never guess how strong a symptom is. 9) If a term is unclear, still include it and set ambiguous to true. 10) If the message has nothing about food, symptoms, mood, sleep, energy or the cycle, return empty entries. Common Nepali words: chiya = tea, khaye = ate, thakai = tired, chinta = worry or anxiety, pet dukhyo = stomach cramps, mahina or mahinawari = period.';
+  var SYS='You help a health-diary app used by women in Nepal. Read ONE short diary message. It may be in Nepali (Devanagari), English, Romanized Nepali, or a mix. Extract only what the person clearly states. Rules: 1) Never diagnose, give advice, or add anything not in the message. 2) category is one of: food, symptom, mood, anxiety, energy, sleep, cycle. 3) normalized_name is a short English name (for example Momo, Tea, Cramps, Anxiety, Tired). For cycle use exactly one of: Period started, Period ended, Period late, Missed period, Irregular period. 4) original_phrase is the person’s own words, copied from the message. 5) meal_type only for food, and only if the message states or clearly implies the time (bihana = morning = breakfast, diuso = midday = lunch, beluka or raati = evening = dinner); otherwise none. 6) days_late is a whole number only if the message gives a number of days (convert weeks to days); otherwise 0. 7) Things the person says they did NOT have or do (for example no cramps, momo khaina) must not be entries; list them in skipped. 8) Never guess how strong a symptom is. 9) If a term is unclear, still include it and set ambiguous to true. 10) If the message has nothing about food, symptoms, mood, sleep, energy or the cycle, return empty entries. 11) Fasting or vrat: category food, normalized_name Fasting. Common Nepali words: chiya = tea, khaye = ate, thakai = tired, chinta = worry or anxiety, pet dukhyo = stomach cramps, mahina or mahinawari = period.';
   var SCHEMA={type:'object',properties:{
     message_language:{type:'string',enum:['english','nepali','romanized_nepali','mixed']},
     entries:{type:'array',items:{type:'object',properties:{
@@ -526,26 +526,49 @@ var AI=(function(){
   function validate(o,text){
     if(!o||!Array.isArray(o.entries))throw new Error('bad shape');
     var have={};Parser.norm(text).forEach(function(w){have[w]=1});var out=[];
+    var seen={};
+    function cls(c){return c==='food'?'food':'other'}
+    function pushEnt(ent,e){
+      var pt=Parser.norm(ent.original_phrase);
+      if(pt.length&&!pt.every(function(w){return have[w]})&&ent.uncertainties.indexOf('check_phrase')<0)ent.uncertainties.push('check_phrase');
+      if(e&&e.ambiguous===true)ent.uncertainties.push('ambiguous_term');
+      var k=(ent.vocab_id||('n:'+String(ent.normalized_name).toLowerCase()))+'|'+ent.meal_type+'|'+ent.days_late;
+      if(seen[k])return;seen[k]=1;out.push(ent);
+    }
+    function mkEnt(cat,nm,vid,phr,meal,conf){
+      var en={category:cat,normalized_name:nm,vocab_id:vid,original_phrase:phr,meal_type:null,days_late:null,intensity:null,confidence:conf,uncertainties:[]};
+      if(cat==='food'){en.uncertainties.push('portion_not_stated');en.meal_type=meal;if(!meal)en.uncertainties.push('meal_type_not_stated')}
+      else if(cat!=='note'&&cat!=='cycle')en.uncertainties.push('intensity_not_stated');
+      return en;
+    }
     o.entries.slice(0,12).forEach(function(e){
       if(!e||CATS.indexOf(e.category)<0)return;
       var name=String(e.normalized_name||'').trim().slice(0,60),phr=String(e.original_phrase||'').trim().slice(0,120);
       if(!name)return;
-      var ent={category:e.category,normalized_name:name,vocab_id:null,original_phrase:phr||name,meal_type:null,days_late:null,intensity:null,
-        confidence:(typeof e.confidence==='number'&&e.confidence>=0&&e.confidence<=1)?e.confidence:null,uncertainties:[]};
+      var conf=(typeof e.confidence==='number'&&e.confidence>=0&&e.confidence<=1)?e.confidence:null,meal=MEALS.indexOf(e.meal_type)>=0?e.meal_type:null,ent;
       if(e.category==='cycle'){
-        var vid=CYC[name];if(!vid)return;ent.vocab_id=vid;
+        var vid=CYC[name];if(!vid)return;
+        ent=mkEnt('cycle',name,vid,phr||name,null,conf);
         if(vid==='period_late'){var n=parseInt(e.days_late,10);if(n>=1&&n<=120)ent.days_late=n;else ent.uncertainties.push('days_late_not_stated')}
         else if(vid!=='irregular_period')ent.uncertainties.push('date_not_stated');
       }else{
-        var f=Parser.find(name)||Parser.find(ent.original_phrase);
-        if(f&&f.category===e.category){ent.vocab_id=f.id;ent.normalized_name=f.name}
-        if(e.category==='food'){ent.uncertainties.push('portion_not_stated');ent.meal_type=MEALS.indexOf(e.meal_type)>=0?e.meal_type:null;if(!ent.meal_type)ent.uncertainties.push('meal_type_not_stated')}
-        else ent.uncertainties.push('intensity_not_stated');
+        var f=Parser.find(phr)||Parser.find(name);
+        if(f&&!(cls(f.category)===cls(e.category)||f.id==='fasting'))f=null;
+        if(f)ent=mkEnt(f.category,f.name,f.id,phr||name,meal,conf);
+        else{
+          var ps=Parser.parse(phr||name).entries.filter(function(x){return x.vocab_id&&cls(x.category)===cls(e.category)});
+          if(ps.length){
+            ps.forEach(function(px){
+              var q=Object.assign({},px,{confidence:conf,uncertainties:px.uncertainties.slice()});
+              if(q.category==='food'&&meal&&!q.meal_type){q.meal_type=meal;q.uncertainties=q.uncertainties.filter(function(u){return u!=='meal_type_not_stated'})}
+              pushEnt(q,e);
+            });
+            return;
+          }
+          ent=mkEnt(e.category,name,null,phr||name,meal,conf);
+        }
       }
-      var pt=Parser.norm(ent.original_phrase);
-      if(pt.length&&!pt.every(function(w){return have[w]}))ent.uncertainties.push('check_phrase');
-      if(e.ambiguous===true)ent.uncertainties.push('ambiguous_term');
-      out.push(ent);
+      pushEnt(ent,e);
     });
     var sk=(Array.isArray(o.skipped)?o.skipped:[]).slice(0,6).filter(function(x){return x&&x.normalized_name}).map(function(x){return{normalized_name:String(x.normalized_name).slice(0,60),original_phrase:String(x.original_phrase||x.normalized_name).slice(0,120)}});
     var lang=['english','nepali','romanized_nepali','mixed'].indexOf(o.message_language)>=0?o.message_language:'mixed';
@@ -615,7 +638,7 @@ var AI=(function(){
       });
     });
   }
-  return{cfg:cfg,save:save,interpret:interpret,why:why,test:test,speed:speed};
+  return{cfg:cfg,save:save,interpret:interpret,why:why,test:test,speed:speed,validate:validate};
 })();
 (function(){
   var c=AI.cfg(),on=document.getElementById('aiOn'),key=document.getElementById('aiKey'),mod=document.getElementById('aiModel'),st=document.getElementById('aiStatus');
@@ -1006,22 +1029,23 @@ function safetyFlags(text,entries){
   Object.keys(RX).forEach(function(k){if(RX[k].test(text||''))f[k]=1});
   return f;
 }
-var ltDelay=700;
-function ltShow(id,title,G,extra){
+var ltDelay=4000,ltRetry=10000;
+function ltShow(id,title,G,extra,errs){
   var out=document.getElementById('ltOut'),old=document.getElementById(id);if(old)old.remove();
   var box=el('div');box.id=id;box.style.marginTop='12px';box.appendChild(el('b','',title));
   var names={english:'English',nepali:'Nepali',romanized:'Romanized',unlisted:'Unlisted foods'},rows=[],txt=title+'\n';
   function pc(a,b){return b?Math.round(100*a/b)+'%':'–'}
   Object.keys(names).forEach(function(k){var g=G[k];if(!g)return;
-    var r=[names[k],g.n+(g.err?' (+'+g.err+' errors)':''),g.ok+'/'+g.n,pc(g.tp,g.tp+g.fn),pc(g.tp,g.tp+g.fp),pc(g.mOk,g.mN),pc(g.dOk,g.dN)];
+    var r=[names[k],g.n+(g.err?' +'+g.err:''),g.ok+'/'+g.n,pc(g.tp,g.tp+g.fn),pc(g.tp,g.tp+g.fp),pc(g.mOk,g.mN),pc(g.dOk,g.dN)];
     rows.push(r);txt+=r.join(' | ')+'\n';});
   var wrap=el('div');wrap.style.cssText='overflow-x:auto;margin:6px 0';
-  wrap.appendChild(tableEl(['Group','Messages','Fully right','Items found','No extras','Meal time','Days late'],rows));box.appendChild(wrap);
+  wrap.appendChild(tableEl(['Group','Msgs','Right','Found','Extras','Meal','Days'],rows));box.appendChild(wrap);
   if(extra)box.appendChild(el('p','muted',extra));
   var det=el('details'),sm=el('summary','muted','Which messages missed');det.appendChild(sm);
   Object.keys(names).forEach(function(k){var g=G[k];if(!g)return;g.miss.forEach(function(m){
     var d=el('div','ent');d.appendChild(el('b','',m.text));
     d.appendChild(el('div','muted',(m.missing.length?'Missed: '+m.missing.join(', ')+'. ':'')+(m.extra.length?'Extra: '+m.extra.join(', ')+'.':'')));det.appendChild(d)})});
+  (errs||[]).forEach(function(m){var d=el('div','ent');d.appendChild(el('b','',m.text));d.appendChild(el('div','muted','No AI reply: '+m.why));det.appendChild(d)});
   box.appendChild(det);
   box.appendChild(btn('Copy results','chip',function(){
     try{navigator.clipboard.writeText(txt).then(function(){toast('Copied')},function(){toast('Couldn’t copy')})}catch(e){toast('Couldn’t copy')}}));
@@ -1039,17 +1063,19 @@ function ltShow(id,title,G,extra){
     if(!window.LANGTEST||!window.VOCAB){st.textContent='Still loading. Try again in a moment.';return}
     if(!c.key){st.textContent='Add your Gemini key in the AI helper first.';return}
     if(!navigator.onLine){st.textContent='You are offline. The AI test needs internet.';return}
-    var btnAi=this,i=0,res=[],bad=0,stop=false;btnAi.disabled=true;
+    var btnAi=this,i=0,res=[],bad=0,stop=false,tried={},N=LANGTEST.tests.length;btnAi.disabled=true;
     function next(){
-      if(stop||i>=LANGTEST.tests.length)return finish();
-      var t=LANGTEST.tests[i];st.textContent='AI test: '+(i+1)+' of '+LANGTEST.tests.length+'…';
-      AI.interpret(t.text).then(function(r){bad=0;res.push({t:t,entries:r.entries})},function(e){
-        bad++;res.push({t:t,entries:null,why:AI.why(e)});if(bad>=3)stop=true;
-      }).then(function(){i++;setTimeout(next,ltDelay)});
+      if(stop||i>=N)return finish();
+      var t=LANGTEST.tests[i];st.textContent='AI test: '+(i+1)+' of '+N+'…';
+      AI.interpret(t.text).then(function(r){bad=0;res.push({t:t,entries:r.entries});return 'done'},function(e){
+        if(e&&e.status===429&&!tried[i]){tried[i]=1;st.textContent='AI test: '+(i+1)+' of '+N+' (waiting for the free limit)…';
+          return new Promise(function(ok){setTimeout(ok,ltRetry)}).then(function(){return 'retry'})}
+        bad++;res.push({t:t,entries:null,why:AI.why(e)+(e&&e.status?' (error '+e.status+')':'')});if(bad>=3)stop=true;return 'done';
+      }).then(function(x){if(x!=='retry')i++;setTimeout(next,ltDelay)});
     }
     function finish(){
-      btnAi.disabled=false;var errs=res.filter(function(r){return!r.entries}).length;
-      ltShow('lt-ai','AI reader ('+c.model+')',LANGTEST.score(res),(errs?errs+' messages got no AI reply'+(stop?' (stopped after 3 errors in a row: '+res[res.length-1].why+')':'')+' and are not scored. ':'')+'Scores only cover messages the AI answered.');
+      btnAi.disabled=false;var bads=res.filter(function(r){return!r.entries}).map(function(r){return{text:r.t.text,why:r.why}});
+      ltShow('lt-ai','AI reader ('+c.model+')',LANGTEST.score(res),(bads.length?bads.length+' messages got no AI reply and are not scored (+n in the table). ':'')+'Scores only cover messages the AI answered.',bads);
       st.textContent=stop?'AI test stopped early. Wait a few minutes and try again.':'AI test done.';
     }
     next();

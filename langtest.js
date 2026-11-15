@@ -53,10 +53,10 @@ t('romanized','aaja ramro lagyo, khushi',[['happy']]);
 t('romanized','belukaa lassi ra chatpate khaye, khane man lagyo',[['lassi','dinner'],['chatpate','dinner'],['cravings']]);
 // Unlisted foods (not in the vocabulary on purpose)
 t('unlisted','had masala dosa for lunch',[['dosa','lunch',null,true]]);
-t('unlisted','had kwati for dinner and felt tired',[['kwati','dinner',null,true],['fatigue']]);
+t('unlisted','had kwati for dinner and felt tired',[['kwanti|kwati','dinner',null,true],['fatigue']]);
 t('unlisted','bihana gwaramari khaye',[['gwaramari','breakfast',null,true]]);
 t('unlisted','diuso idli ra chiya khaye',[['idli','lunch',null,true],['chiya','lunch']]);
-t('unlisted','आज दिउँसो क्वाँटी खाएँ',[['kwati','lunch',null,true]]);
+t('unlisted','आज दिउँसो क्वाँटी खाएँ',[['kwanti|kwati','lunch',null,true]]);
 t('unlisted','बिहान डोसा र चिया खाएँ',[['dosa','breakfast',null,true],['chiya','breakfast']]);
 function keyOf(e){return e.vocab_id||String(e.normalized_name||'').toLowerCase()}
 function score(results){
@@ -67,8 +67,9 @@ function score(results){
     g.n++;var used=[],missing=[],mOkAll=true;
     r.t.exp.forEach(function(x){
       var hit=-1;
-      r.entries.forEach(function(e,i){if(hit>=0||used[i])return;var k=keyOf(e);
-        if(k===x.k||(x.loose&&(k.indexOf(x.k)>=0||String(e.original_phrase||'').toLowerCase().indexOf(x.k)>=0)))hit=i});
+      var alts=x.k.split('|');
+      r.entries.forEach(function(e,i){if(hit>=0||used[i])return;var k=keyOf(e),ph=String(e.original_phrase||'').toLowerCase();
+        alts.forEach(function(a){if(k===a||(x.loose&&(k.indexOf(a)>=0||ph.indexOf(a)>=0)))hit=hit>=0?hit:i})});
       if(hit<0){g.fn++;missing.push(x.k);return}
       used[hit]=1;g.tp++;var e=r.entries[hit];
       if(x.meal){g.mN++;if(e.meal_type===x.meal)g.mOk++;else mOkAll=false}
