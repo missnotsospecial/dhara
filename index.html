@@ -170,12 +170,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <p class="muted" id="ltStatus" role="status"></p>
     <div id="ltOut"></div>
   </div>
-  <div class="card"><h2>Test tools</h2>
-    <p class="muted">Temporary, for checking storage. These are removed before the final version.</p>
-    <button class="btn alt" id="testBtn">Add test record</button>
-    <div id="recList" style="margin-top:10px"></div>
-  </div>
-  <div class="note">Build: Module 10, version 15. AI reading fixes, paced test.</div>
+  <div class="note">Build: Module 10, version 16 (final).</div>
 </section>
 </main>
 
@@ -1111,27 +1106,13 @@ var DB=(function(){
     exportJson:function(){return JSON.stringify({app:'Dhara',exported_at:now(),schema_version:1,records:data.records},null,2)}
   };
 })();
-var testBtn=document.getElementById('testBtn'),exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
+var exportBtn=document.getElementById('exportBtn'),delBtn=document.getElementById('delBtn');
 function fmt(iso){try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function renderData(){
   renderToday();renderCycle();renderPatterns();renderReport();
   var all=DB.all();
   document.getElementById('dataInfo').textContent=all.length+(all.length===1?' record':' records')+' saved on this phone. Nothing leaves your device.';
-  var l=document.getElementById('recList');l.innerHTML='';
-  if(!all.length){l.innerHTML='<p class="muted">No records yet.</p>';return}
-  all.slice(-5).reverse().forEach(function(r){
-    var d=document.createElement('div');d.className='rec';
-    d.innerHTML='<div><b></b><div class="muted"></div></div><button class="chip">Remove</button>';
-    d.querySelector('b').textContent=r.category+': '+(r.normalized_name||'');
-    d.querySelector('.muted').textContent=fmt(r.created_at)+' · '+r.source;
-    d.querySelector('button').onclick=function(){DB.remove(r.id);renderData();toast('Record removed')};
-    l.appendChild(d);
-  });
 }
-testBtn.onclick=function(){
-  var r=DB.add({category:'note',normalized_name:'Test record '+(DB.all().length+1),source:'test',occurred_at:new Date().toISOString()});
-  if(r){renderData();toast('Saved on this phone')}
-};
 exportBtn.onclick=function(){
   var b=new Blob([DB.exportJson()],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(b);a.download='dhara-export-'+new Date().toISOString().slice(0,10)+'.json';
