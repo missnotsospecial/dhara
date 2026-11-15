@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#1F7A6D">
 <link rel="manifest" href="manifest.json">
 <script src="parser.js"></script>
+<script src="langtest.js"></script>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Dhara</title>
@@ -162,12 +163,19 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <button class="link" id="aiRemove">Remove key from this phone</button>
   </div>
   <div class="card"><h2>Nepal vocabulary</h2><p class="muted" id="vocabInfo">Loading…</p></div>
+  <div class="card"><h2>Language test</h2>
+    <p class="muted">Runs 51 made-up messages (15 English, 15 Nepali, 15 Romanized Nepali, and 6 foods that are not in the vocabulary) and scores how many items Dhara found. The team wrote these messages, so real-world accuracy will be lower. The AI test sends only these made-up messages, using your key.</p>
+    <button class="btn alt" id="ltOff">Run offline test</button>
+    <button class="btn alt" id="ltAi">Run AI test</button>
+    <p class="muted" id="ltStatus" role="status"></p>
+    <div id="ltOut"></div>
+  </div>
   <div class="card"><h2>Test tools</h2>
     <p class="muted">Temporary, for checking storage. These are removed before the final version.</p>
     <button class="btn alt" id="testBtn">Add test record</button>
     <div id="recList" style="margin-top:10px"></div>
   </div>
-  <div class="note">Build: Module 9, version 13. Safety notes check your own words.</div>
+  <div class="note">Build: Module 10, version 14. Language test runner.</div>
 </section>
 </main>
 
@@ -998,6 +1006,55 @@ function safetyFlags(text,entries){
   Object.keys(RX).forEach(function(k){if(RX[k].test(text||''))f[k]=1});
   return f;
 }
+var ltDelay=700;
+function ltShow(id,title,G,extra){
+  var out=document.getElementById('ltOut'),old=document.getElementById(id);if(old)old.remove();
+  var box=el('div');box.id=id;box.style.marginTop='12px';box.appendChild(el('b','',title));
+  var names={english:'English',nepali:'Nepali',romanized:'Romanized',unlisted:'Unlisted foods'},rows=[],txt=title+'\n';
+  function pc(a,b){return b?Math.round(100*a/b)+'%':'–'}
+  Object.keys(names).forEach(function(k){var g=G[k];if(!g)return;
+    var r=[names[k],g.n+(g.err?' (+'+g.err+' errors)':''),g.ok+'/'+g.n,pc(g.tp,g.tp+g.fn),pc(g.tp,g.tp+g.fp),pc(g.mOk,g.mN),pc(g.dOk,g.dN)];
+    rows.push(r);txt+=r.join(' | ')+'\n';});
+  var wrap=el('div');wrap.style.cssText='overflow-x:auto;margin:6px 0';
+  wrap.appendChild(tableEl(['Group','Messages','Fully right','Items found','No extras','Meal time','Days late'],rows));box.appendChild(wrap);
+  if(extra)box.appendChild(el('p','muted',extra));
+  var det=el('details'),sm=el('summary','muted','Which messages missed');det.appendChild(sm);
+  Object.keys(names).forEach(function(k){var g=G[k];if(!g)return;g.miss.forEach(function(m){
+    var d=el('div','ent');d.appendChild(el('b','',m.text));
+    d.appendChild(el('div','muted',(m.missing.length?'Missed: '+m.missing.join(', ')+'. ':'')+(m.extra.length?'Extra: '+m.extra.join(', ')+'.':'')));det.appendChild(d)})});
+  box.appendChild(det);
+  box.appendChild(btn('Copy results','chip',function(){
+    try{navigator.clipboard.writeText(txt).then(function(){toast('Copied')},function(){toast('Couldn’t copy')})}catch(e){toast('Couldn’t copy')}}));
+  out.appendChild(box);
+}
+(function(){
+  var st=document.getElementById('ltStatus');
+  document.getElementById('ltOff').onclick=function(){
+    if(!window.Parser||!window.VOCAB||!window.LANGTEST){st.textContent='Still loading. Try again in a moment.';return}
+    var res=LANGTEST.tests.map(function(t){return{t:t,entries:Parser.parse(t.text).entries}});
+    ltShow('lt-offline','Offline reader (no internet, no AI)',LANGTEST.score(res));st.textContent='Offline test done.';
+  };
+  document.getElementById('ltAi').onclick=function(){
+    var c=AI.cfg();
+    if(!window.LANGTEST||!window.VOCAB){st.textContent='Still loading. Try again in a moment.';return}
+    if(!c.key){st.textContent='Add your Gemini key in the AI helper first.';return}
+    if(!navigator.onLine){st.textContent='You are offline. The AI test needs internet.';return}
+    var btnAi=this,i=0,res=[],bad=0,stop=false;btnAi.disabled=true;
+    function next(){
+      if(stop||i>=LANGTEST.tests.length)return finish();
+      var t=LANGTEST.tests[i];st.textContent='AI test: '+(i+1)+' of '+LANGTEST.tests.length+'…';
+      AI.interpret(t.text).then(function(r){bad=0;res.push({t:t,entries:r.entries})},function(e){
+        bad++;res.push({t:t,entries:null,why:AI.why(e)});if(bad>=3)stop=true;
+      }).then(function(){i++;setTimeout(next,ltDelay)});
+    }
+    function finish(){
+      btnAi.disabled=false;var errs=res.filter(function(r){return!r.entries}).length;
+      ltShow('lt-ai','AI reader ('+c.model+')',LANGTEST.score(res),(errs?errs+' messages got no AI reply'+(stop?' (stopped after 3 errors in a row: '+res[res.length-1].why+')':'')+' and are not scored. ':'')+'Scores only cover messages the AI answered.');
+      st.textContent=stop?'AI test stopped early. Wait a few minutes and try again.':'AI test done.';
+    }
+    next();
+  };
+})();
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
   var data={schema_version:1,records:[]};
