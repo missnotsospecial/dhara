@@ -92,7 +92,16 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
 <section id="home">
   <div class="card">
     <textarea id="msg" aria-label="Tell Dhara about your day" placeholder="Had momo for lunch, feeling tired..."></textarea>
-    <button class="btn" id="send">Send</button>
+    <div class="rowx" style="margin-top:6px">
+      <div class="row" style="flex-wrap:nowrap;align-items:center">
+        <button class="chip" id="mic" type="button">Speak</button>
+        <select class="in" id="vlang" aria-label="Voice language" style="width:auto;min-height:40px;padding:6px 8px"><option value="ne-NP">नेपाली</option><option value="en-US">English</option></select>
+      </div>
+      <button class="btn" id="send">Send</button>
+    </div>
+  </div>
+  <div class="note" id="voiceNote" hidden>Voice typing sends your voice to Google’s speech service (Chrome does this) and needs internet. Use made-up messages only.
+    <div class="row" style="margin-top:8px"><button class="chip" id="voiceOk" type="button">Allow and start</button><button class="chip" id="voiceNo" type="button">Cancel</button></div>
   </div>
   <div class="row" style="margin-bottom:14px">
     <button class="chip p" data-t="Period started today. ">Period started</button>
@@ -108,6 +117,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
   </div>
   <div id="parseOut" hidden></div>
   <div class="card" id="homeCycle"></div>
+  <div id="sugHost"></div>
   <div id="today"></div>
 </section>
 
@@ -120,6 +130,10 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
 <section id="me" hidden>
   <div class="card" id="installCard" hidden><h2>Add Dhara to your home screen</h2><p class="muted">Open it like any app, even without internet.</p><button class="btn alt" id="install">Install</button></div>
   <div class="card"><h2>About Dhara</h2><p class="muted">Dhara helps you track and prepare. It does not diagnose or replace a doctor.</p></div>
+  <div class="card"><h2>Small ideas</h2>
+    <p class="muted">After you log, Dhara may show one gentle, optional idea, at most once a day. They are general ideas, not medical advice, and never about weight or calories. They have not been reviewed by a clinician yet.</p>
+    <label class="chk"><input type="checkbox" id="sugOn"><span>Show a small idea after I log</span></label>
+  </div>
   <div class="card" id="safetyCard"><h2>Safety and help</h2>
     <p class="muted">Dhara helps you track and prepare. It can’t tell you what is wrong.</p>
     <details style="margin-top:8px"><summary>When to get medical care</summary>
@@ -170,7 +184,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <p class="muted" id="ltStatus" role="status"></p>
     <div id="ltOut"></div>
   </div>
-  <div class="note">Build: Module 10, version 16 (final).</div>
+  <div class="note">Build: version 17. Voice typing and small ideas added.</div>
 </section>
 </main>
 
@@ -330,8 +344,10 @@ function saveAll(){
       if(r)n++;
     });
   }catch(err){toast('Couldn’t save one entry. Please check it.');renderData();return}
+  var sg=n?pickSug(draft.entries,draft.flags):null;
   closeCard();msg.value='';renderData();
   toast('Saved '+n+(n===1?' entry':' entries'));
+  if(sg)showSug(sg);
 }
 function renderToday(){
   var h=document.getElementById('today');if(!h)return;h.innerHTML='';
@@ -1075,6 +1091,78 @@ function ltShow(id,title,G,extra,errs){
     }
     next();
   };
+})();
+var SUGS=[
+ {ids:['cramps'],t:'Some people find a warm compress or gentle stretching comforting during cramps. If the pain is strong or unusual, a doctor can help.'},
+ {ids:['nausea','dizziness'],t:'It may help to sit down, sip some water and rest. If it keeps happening or you feel faint, please see a doctor.'},
+ {ids:['headache'],t:'Water, rest and a quiet moment help some people with headaches. If they are frequent or severe, mention them to a doctor.'},
+ {ids:['bloating'],t:'Eating slowly and sipping water through the day helps some people with bloating.'},
+ {ids:['fatigue','low_energy'],t:'Feeling tired is common. A glass of water, a few minutes of fresh air, or simply resting can help. Be gentle with yourself.'},
+ {ids:['poor_sleep'],t:'A regular bedtime, and putting the phone away a little before sleep, helps some people rest better.'},
+ {ids:['cravings'],t:'Cravings are normal and nothing to feel bad about. Regular meals and water can help some people feel steadier.'},
+ {ids:['acne','oily_skin','hair_thinning','excess_hair'],t:'Skin and hair changes can be frustrating. Noting when they flare helps your doctor see the pattern.'},
+ {ids:['momo','jhol_momo','fried_momo','kothey_momo','chowmein','pizza','burger','noodles','french_fries','chips','fried_rice','samosa','pakoda'],t:'A side of vegetables, or a bowl of gundruk or dal soup, can go nicely with that, if it suits you. No pressure.'},
+ {ids:['soft_drink','mithai','jalebi','laddu','gulab_jamun','kheer','lalmohan','rasbari','ice_cream','chocolate','cake'],t:'Enjoy it. If you like, a glass of water alongside is an easy extra.'},
+ {ids:['dal_bhat'],t:'Dal bhat is a filling meal. An extra spoon of tarkari or saag is one easy addition, if you like.'},
+ {ids:['happy'],t:'Glad today felt good. Noting what helped can be useful to look back on.'}
+];
+var SUG_FALLBACK='Thanks for logging today. A few days of notes already help your doctor see the bigger picture.';
+var DISTRESS={anxiety:1,low_mood:1,stress:1,irritability:1,mood_swings:1,heavy_flow:1,missed_period:1,period_late:1,irregular_period:1};
+var NOSUG={fasting:1,raksi:1,tongba:1,beer:1};
+function sugState(){try{return JSON.parse(localStorage.getItem('dhara.sug')||'{}')}catch(e){return{}}}
+function sugSave(o){try{localStorage.setItem('dhara.sug',JSON.stringify(o))}catch(e){}}
+function pickSug(entries,flags){
+  if(!entries||!entries.length||Object.keys(flags||{}).length)return null;
+  var ids={};
+  for(var i=0;i<entries.length;i++){
+    var e=entries[i];if(e.category==='anxiety')return null;
+    if(e.vocab_id){if(DISTRESS[e.vocab_id]||NOSUG[e.vocab_id])return null;ids[e.vocab_id]=1}
+  }
+  for(var j=0;j<SUGS.length;j++)if(SUGS[j].ids.some(function(x){return ids[x]}))return SUGS[j];
+  return{t:SUG_FALLBACK};
+}
+function showSug(sg){
+  var st=sugState(),host=document.getElementById('sugHost');
+  if(!host||st.off||st.last===todayISO())return;
+  st.last=todayISO();sugSave(st);host.innerHTML='';
+  var c=el('div','card');c.appendChild(el('span','tag','A small idea (optional)'));
+  c.appendChild(el('p','',sg.t));
+  c.appendChild(el('p','muted','General ideas, not medical advice.')).style.fontSize='12px';
+  var r=el('div','row');r.style.marginTop='6px';
+  r.appendChild(btn('Thanks','chip',function(){host.innerHTML=''}));
+  r.appendChild(btn('Don’t show ideas','chip',function(){var s2=sugState();s2.off=true;sugSave(s2);host.innerHTML='';document.getElementById('sugOn').checked=false;toast('Ideas are off. You can turn them on in Me.')}));
+  c.appendChild(r);host.appendChild(c);
+}
+(function(){
+  var on=document.getElementById('sugOn');if(!on)return;on.checked=!sugState().off;
+  on.onchange=function(){var st=sugState();st.off=!on.checked;sugSave(st);toast(on.checked?'Ideas are on':'Ideas are off')};
+})();
+(function(){
+  var mic=document.getElementById('mic'),vl=document.getElementById('vlang'),note=document.getElementById('voiceNote');
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,listening=false,base='',VK='dhara.voice';
+  function vs(){try{return JSON.parse(localStorage.getItem(VK)||'{}')}catch(e){return{}}}
+  function vsave(o){try{localStorage.setItem(VK,JSON.stringify(o))}catch(e){}}
+  if(!SR){mic.hidden=true;vl.hidden=true;return}
+  vl.value=vs().lang||'ne-NP';
+  vl.onchange=function(){var o=vs();o.lang=vl.value;vsave(o)};
+  function stopUI(){listening=false;mic.textContent='Speak';mic.removeAttribute('aria-pressed')}
+  var ERR={'not-allowed':'The microphone is blocked. Allow it for this site in Chrome’s settings.','service-not-allowed':'Voice typing isn’t allowed on this phone.','no-speech':'I didn’t hear anything. Try again, a little closer to the phone.','network':'Voice typing needs internet. You can still type.','language-not-supported':'This phone can’t recognise that language. Try English, or type.','audio-capture':'No microphone was found.'};
+  function start(){
+    if(!navigator.onLine){toast('Voice typing needs internet. You can still type.');return}
+    rec=new SR();rec.lang=vl.value;rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+    base=msg.value&&!/\s$/.test(msg.value)?msg.value+' ':msg.value;
+    rec.onresult=function(e){var t='';for(var i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;msg.value=base+t};
+    rec.onerror=function(e){stopUI();toast(ERR[e.error]||'Voice typing didn’t work. You can still type.')};
+    rec.onend=function(){stopUI()};
+    try{rec.start();listening=true;mic.textContent='Listening… tap to stop';mic.setAttribute('aria-pressed','true')}catch(e){stopUI();toast('Couldn’t start the microphone')}
+  }
+  mic.onclick=function(){
+    if(listening){try{rec.stop()}catch(e){}return}
+    if(!vs().ok){note.hidden=false;return}
+    start();
+  };
+  document.getElementById('voiceOk').onclick=function(){var o=vs();o.ok=true;vsave(o);note.hidden=true;start()};
+  document.getElementById('voiceNo').onclick=function(){note.hidden=true};
 })();
 var DB=(function(){
   var KEY='dhara.data',CATS=['food','symptom','mood','anxiety','energy','sleep','cycle','note'],SRC=['manual','ai','offline_rules','sample','test'];
