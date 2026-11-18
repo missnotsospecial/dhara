@@ -184,7 +184,7 @@ button:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outlin
     <p class="muted" id="ltStatus" role="status"></p>
     <div id="ltOut"></div>
   </div>
-  <div class="note">Build: version 17. Voice typing and small ideas added.</div>
+  <div class="note">Build: version 18. Voice typing and small ideas.</div>
 </section>
 </main>
 
@@ -1211,7 +1211,7 @@ var delArm=0,delT;
 function resetDel(){delArm=0;delBtn.textContent='Delete all data'}
 delBtn.onclick=function(){
   if(!delArm){delArm=1;delBtn.textContent='Tap again to delete everything';clearTimeout(delT);delT=setTimeout(resetDel,4000);return}
-  DB.clear();resetDel();renderData();toast('All data deleted');
+  DB.clear();var sg0=sugState();delete sg0.last;sugSave(sg0);var sh=document.getElementById('sugHost');if(sh)sh.innerHTML='';resetDel();renderData();toast('All data deleted');
 };
 renderData();
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(function(){})}
